@@ -1,0 +1,13 @@
+#ifndef __LINKAGE_H_
+#define __LINKAGE_H_
+
+
+#ifndef ENTRY
+#define ENTRY(name) \
+    .globl name;\
+name:
+#endif
+
+
+#endif
+

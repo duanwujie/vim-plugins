@@ -1,0 +1,51 @@
+#!/bin/bash
+
+
+function create_table()
+{
+    echo "
+DROP TABLE IF EXISTS \`m15_$1\`;
+    CREATE TABLE \`m15_$1\` (
+            \`id\` bigint(32) NOT NULL,
+            \`timestamp\` int(32) NOT NULL,
+            \`open\` float(255,3) NOT NULL,
+            \`close\` float(255,3) NOT NULL,
+            \`high\` float(255,3) NOT NULL,
+            \`low\` float(255,3) NOT NULL,
+            \`volume\` float(255,3) NOT NULL,
+            \`trunover\` float(255,3) NOT NULL,
+            \`ma5\` float(255,3) NOT NULL,
+            \`ma10\` float(255,3) NOT NULL,
+            \`ma20\` float(255,3) NOT NULL,
+            \`ma30\` float(255,3) NOT NULL,
+            \`ma60\` float(255,3) NOT NULL,
+            \`va5\` float(255,3) NOT NULL,
+            \`va10\` float(255,3) NOT NULL,
+            \`va20\` float(255,3) NOT NULL,
+            \`va30\` float(255,3) NOT NULL,
+            \`va60\` float(255,3) NOT NULL,
+            \`date\` date NOT NULL,
+            \`time\` time NOT NULL,
+            PRIMARY KEY (\`id\`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    " >initm15.sql
+    mysql  -hlocalhost -uroot -p123456 -Dstockdb < ./initm15.sql
+}
+
+
+    create_table $i
+
+
+for i in 1999 2000 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017
+do
+    create_table $i
+    for j in $i/*
+    do
+       
+        rid=`basename $j`
+        ./muticsvread $j $rid m15_$i > current.sql
+        echo $j $rid $i
+        mysql  -hlocalhost -uroot -p123456 -Dstockdb < ./current.sql 
+    done
+done
+

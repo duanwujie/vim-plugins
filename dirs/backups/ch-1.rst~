@@ -1,0 +1,92 @@
+如何计算现值
+----------------
+
+* `现金流和资产`_ (*Cashflows and Assets*)
+* 现值因子(*The Present Value Operator*)
+* 货币的时间价值(*The Time Value of Money*)
+* 特殊的现金流:永续年金(*Special Cashflows: The Perpetuity*)
+* 特殊现金流:年金(*Special Cashflows: The Annuity*)
+* 复利(*Compounding*)
+* 通货膨胀(*Inflation*)
+* Extensions and Qualifications
+* 现值(*Present Value*)
+* 净现值(*Net Present Value or NPV*)
+* 市场摩擦(*firctions*)
+* 基准利率(*benchmark interest rate*)
+* 到期收益率(*yield to maturity offered*)
+* 年利率(*Annuity percentage rate,APR*)
+* 实际年利率(*Effective annual rate,EPR*)
+
+
+现金流和资产
+~~~~~~~~~~~~~~~~~~
+
+资产的价值: *A Sequence of Cashflows*
+
+.. math::
+
+        Values \quad of \quad Assert_t \equiv V_t(CF_t,CF_{t+1},CF_{t+2},...)
+
+1. :math:`V_t` 是什么?
+
+.. math::
+
+        V_t(CF_0,CF_{1},CF_{2},...) = CF_0+(\frac{\$_1}{\$_0}) \times CF_1+(\frac{\$_2}{\$_0}) \times CF_2 + ...
+
+
+
+
+永续年金和年金
+~~~~~~~~~~~~~~~~
+
+年金折现因子(Annuity Discount Factor)
+
+        .. math::
+
+                ADF(r,T) \equiv \frac{1}{r}[1-\frac{1}{(1+r)^T}]
+        
+年金
+
+        .. math::
+
+                PV = C \times ADF(r,T)
+
+永续年金
+
+        .. math:: 
+        
+                PV \equiv C \times ADF(r,\infty) \equiv \frac{C}{r}
+
+
+
+假如C是按照g的增长率，一直进行增长的，那么其永续年金(Perpetuity)怎么计算呢?,该公司在股票和债券定价过程中很有用的!!!
+
+
+        .. math::
+
+                PV = \frac{C}{1+r} + \frac{C(1+g)}{(1+r)^2} + \frac{C(1+g)^2}{(1+r)^3} + ... + \frac{C(1+g)^{T-1}}{(1+r)^T}
+
+         \frac{1+r}{1+g}PV = \frac{C}{1+g} + \frac{C}{1+r} + \frac{C(1+g)}{(1+r)^2} + ... + \frac{C(1+g)^{T-2}}{(1+r)^{T-1}}
+
+                \Longrightarrow PV[\frac{1+r}{1+g}-1] = \frac{C}{1+g} \Longrightarrow PV=\frac{C}{r-g},(r>g)
+
+复利(Compounding)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+EPR:
+
+* Let rdenote APR, nperiods of compounding
+* r/n is per-period rate for each period
+* Effective annual rate (EAR) is
+
+.. math::
+
+        r_{EAR}≡(1+\frac{r}{n})^n−1
+
+如何确定的基准利率
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+通货膨胀
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+

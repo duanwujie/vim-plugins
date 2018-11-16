@@ -1,0 +1,26 @@
+
+DROP TABLE IF EXISTS `m15_2017`;
+    CREATE TABLE `m15_2017` (
+            `id` bigint(32) NOT NULL,
+            `timestamp` int(32) NOT NULL,
+            `open` float(255,3) NOT NULL,
+            `close` float(255,3) NOT NULL,
+            `high` float(255,3) NOT NULL,
+            `low` float(255,3) NOT NULL,
+            `volume` float(255,3) NOT NULL,
+            `trunover` float(255,3) NOT NULL,
+            `ma5` float(255,3) NOT NULL,
+            `ma10` float(255,3) NOT NULL,
+            `ma20` float(255,3) NOT NULL,
+            `ma30` float(255,3) NOT NULL,
+            `ma60` float(255,3) NOT NULL,
+            `va5` float(255,3) NOT NULL,
+            `va10` float(255,3) NOT NULL,
+            `va20` float(255,3) NOT NULL,
+            `va30` float(255,3) NOT NULL,
+            `va60` float(255,3) NOT NULL,
+            `date` date NOT NULL,
+            `time` time NOT NULL
+            PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+    

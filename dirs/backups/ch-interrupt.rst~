@@ -1,0 +1,1540 @@
+
+中断
+===============
+
+
+
+中断和IPIPE整体流程如下图：
+
+
+
+.. image:: images/int-all.png
+
+
+1. 左上角图像为中断向量表的跳转过程，详细参见 `中断向量表`_
+2. 右上角irq domain中radix-tree的映射过程，主要用于对硬件中断号和irq number进行映射，详细参见 `irq domain`_
+3. 右下角为中断控制器驱动(这里是bcm2836)对中断的处理过程,详细参见 `外部中断(IRQ)`_
+4. 左下角为ipipe-domain的中断处理流程，详细参见 `i-pipe domain`_
+ 
+
+
+中断初始化
+-------------------
+
+
+1. 什么是中断?
+2. 什么是中断源?
+3. 什么是中断控制器?
+4. 中断向量
+5. 中断服务程序(IRS)
+
+
+中断系统整体初始化流程如下图:
+
+.. image:: images/int-init.png
+
+1. 中断向量表的初始化,主要在函数 ``early_trap_init`` 中完成.(参见 `中断向量表`_)
+2. i-pipe domain的初始化,主要在函数 ``__ipipe_init_early`` 和 ``__ipipe_init`` 中完成(参见 `i-pipe domain`_ )    
+3. irq-domain的初始化,主要在中断控制器驱动中完成(参见 `irq domain`_ )
+
+
+中断向量表
+---------------
+
+
+.. image:: images/vector-table.png
+
+
+
+early_trap_init
+~~~~~~~~~~~~~~~~~~~~
+
+
+
+        .. code-block:: c
+        
+                //see arch/arm/mm/mmu.c
+        
+                static void __init devicemaps_init(const struct machine_desc *mdesc)
+                {
+                
+                        ......
+                	vectors = early_alloc(PAGE_SIZE * 2);//alloc 2 pages
+                	early_trap_init(vectors);//copy the interrupt table to vectors
+                        
+                        ......
+        
+        	        map.pfn = __phys_to_pfn(virt_to_phys(vectors));
+        	        map.virtual = 0xffff0000;
+        	        map.length = PAGE_SIZE;
+                #ifdef CONFIG_KUSER_HELPERS
+                	map.type = MT_HIGH_VECTORS;
+                #else
+                	map.type = MT_LOW_VECTORS;
+                #endif
+                	create_mapping(&map); //map the virtual address 0xffff0000 to the phy page
+                        ......
+                }
+        
+                //see arch/arm/kernel/traps.c
+                void __init early_trap_init(void *vectors_base)
+                {
+                #ifndef CONFIG_CPU_V7M
+	                unsigned long vectors = (unsigned long)vectors_base;
+                        
+        
+                        ...
+                
+                	for (i = 0; i < PAGE_SIZE / sizeof(u32); i++)
+                		((u32 *)vectors_base)[i] = 0xe7fddef1;
+                
+                	memcpy((void *)vectors, __vectors_start, __vectors_end - __vectors_start);
+                	memcpy((void *)vectors + 0x1000, __stubs_start, __stubs_end - __stubs_start);
+                        ...
+                
+                #else /* ifndef CONFIG_CPU_V7M */
+                #endif
+                }
+
+* 在开启mmu的情况下，先分配2个物理页,将中断向量表复制到分配的物理页，在复制中断向量表之前,先将物理页框填充成未定义指令(0xe7fddef1)
+  为什么要填充未定义指令? 因为后续的memcpy和kuer helper函数并不能完全的充满这个page，有些缝隙。如果不这么处理，
+  当极端情况下（程序错误或者HW的issue），CPU可能从这些缝隙中取指执行，从而导致不可知的后果。
+  如果将这些缝隙填充未定义指令，那么CPU可以捕获这种异常。
+* 调用create_mapping完成地址0xffff0000到物理地址的映射(即建立对应的页表)
+
+为什么内核要将中断向量表拷贝到地址 0xffff0000 [5]_ ?这个是arm cpu的规定：对于ARMv4及其以上的版本，
+异常向量表的起始位置由协处理器15（cp15）的控制寄存器(c1)里的V位(bit 13)有关，当V=０时，异常向量表的起始位置在0x00000000，
+而当V=１时，异常向量表就起始于0xffff0000位置. 详细参考(ARM1176JZF-S Technical Reference Manual)
+
+
+.. [5] 该地址是虚拟地址
+
+
+
+
+
+软中断(SWI)
+------------------
+
+
+
+软中断，主要用于处理系统调用,在 ``arch/arm/kernel/entry-common.S`` 中实现,主要流程如下:
+
+.. image:: images/vector-swi.png
+
+
+
+vector_swi
+~~~~~~~~~~~~~~~~~~~
+
+当执行vector_swi的时候，硬件已经做了不少的事情，包括:
+
+* 将CPSR寄存器保存到SPSR_svc寄存器中，将返回地址（用户空间执行swi指令的下一条指令）保存在lr_svc中。
+        
+
+        .. code-block:: c
+
+                        /* Store the regster into the current thread's kernel stack */
+                        sp = sp + sizeof(strcut pt_regs);
+                        for(i=0;i<=12;i++)
+                                *(sp+i) = r(i); /* r0-r12 */
+                        *(sp+S_PC-1) = sp_usr;/* r13 */
+                        *(sp+S_PC-2) = lr_usr;/* r14 */
+                        *(sp+S_PC) = lr;      /* r15(pc) */
+                        
+                        *(sp+S_PSC) = spsr;
+                        *(sp+S_OLD_R0) = r0;
+
+                        /* stmdb: <before decrease> 
+                         * stmia: <after increase>
+                         * stmia   sp, {r0 - r12} : Store multiple, increment after.
+                         * stmdb   r8, {sp, lr}^ : Store multiple, decrease before
+                         * str     lr, [sp, #S_PC] : Store register[X]
+                         */
+
+                        /* Initialize something */
+                        zero_fp();
+                        enable_irq();
+                        ct_user_exit();
+                        get_thread_info(&tsk);
+                        
+                        uaccess_disable(tbl);
+                        tbl = sys_call_table;
+                local_restart:
+                        /* xenomai systemcall process */
+                        if(scno!=XENO_ARM_SYSCALl) /* not the xenomal system call */
+                                goto slow_path;
+                        if(tsk->ipipe_flags & _TIP_HEAD == 0)/* not the realtime thread */
+                                goto slow_path;
+                        ipipe_oabi_save_sysnr(r10);
+                        r0 = ipipe_fastcall_hook(regs);/* regs stored into sp */
+                        ipipe_oabi_restore_sysnr(r10);
+                        if(r0<0)
+                                goto no_fastcall;
+                        get_thread_info(&tsk);
+
+                        if(tsk->ipipe_flags & _TIP_HEAD)
+                                goto fastcall_exit_check;
+                        __ipipe_root_sync();
+                        goto ret_slow_syscall;
+                fastcall_exit_check:
+                        if(tsk->ipipe_flags & _TIP_MAYDAY == 0)
+                                goto __ipipe_ret_to_user;
+                        __ipipe_call_mayday()
+                        goto __ipipe_ret_to_user
+                no_fastcall:
+                        get_thread_info(&tsk)
+                        r0 = XENO_ARM_SYSCALl;
+                        r10 = tsk->ipipe_flags;
+                slow_path:
+                        if(tsk->ipipe_flags & _TIP_NOTIFY)
+                                goto pipeline_syscall;
+                        if(scno != XENO_ARM_SYSCALl)
+                                goto root_syscall;
+                pipeline_syscall:
+                	ipipe_oabi_save_sysnr(r10);
+                        __ipipe_notify_syscall(regs);
+                	ipipe_oabi_restore_sysnr(r10);
+                        get_thread_info(&tsk);
+                        if(tsk->ipipe_flags & _TIP_HEAD)
+                                goto __ipipe_ret_to_user;
+                         if(r0>0)
+                                goto ret_slow_syscall;
+                root_syscall:
+                        /* linux system call process */
+                        r0 = *sp;
+                        r1 = *(sp+1);
+                        r2 = *(sp+2);
+                        r3 = *(sp+3);
+                        /* stmdb	sp!, {r4, r5} : store multiple,decrease before [!: changed] */
+                        *--sp=r4;
+                        *--sp=r5;
+
+                        if(tsk->flags & _TIF_SYSCALL_WORK)
+                                goto __sys_trace
+                        if(scno<NR_syscalls)
+                                tbl[scno*4](r0,...r3);
+                                goto ret_fast_syscall;
+                        //other process
+               /*
+                	add	r1, sp, #S_OFF
+                2:	cmp	scno, #(__ARM_NR_BASE - __NR_SYSCALL_BASE)
+                	eor	r0, scno, #__NR_SYSCALL_BASE	@ put OS number back
+                	bcs	arm_syscall
+                	mov	why, #0				@ no longer a real syscall
+                	b	sys_ni_syscall			@ not private func
+                */
+  
+
+
+保存调用上下文
+^^^^^^^^^^^^^^^^^^^^^^
+  
+在保存调用上下文时涉及压栈动作,这里有个问题sp所指向的栈是哪里的内核栈? 在进程进行切换的时候有硬件上下文的切换，
+即完成了进程内核栈的切换，换句话说在进入vector_swi时，进程的内核栈已经准备好了.
+
+        .. code-block:: c
+
+                /* Store the regster into the current thread's kernel stack */
+                sp = sp + sizeof(strcut pt_regs);
+                for(i=0;i<=12;i++)
+                        *(sp+i) = ri; /* r0-r12 */
+                *(sp+S_PC-1) = sp_usr;/* r13 */
+                *(sp+S_PC-2) = lr_usr;/* r14 */
+                *(sp+S_PC) = lr;      /* r15(pc) */
+                
+                *(sp+S_PSC) = spsr;
+                *(sp+S_OLD_R0) = r0;
+                
+                /* stmdb: <before decrease> 
+                 * stmia: <after increase>
+                 * stmia   sp, {r0 - r12} : Store multiple, increment after.
+                 * stmdb   r8, {sp, lr}^ : Store multiple, decrease before
+                 * str     lr, [sp, #S_PC] : Store register[X]
+                 */
+
+
+.. image:: images/kernel-stack.png
+
+
+为何r0被两次压栈？一个是r0，另外一个是old r0。其实在系统调用过程中，r0有两个角色，一个是传递参数，另外一个是返回值。刚进入系统调用现场的时候，
+
+对于ARM，当然是寄存器了， 特别是返回结果，保存在了r0中。对于ARM，r0～r7是各种cpu mode都相同的，用于传递参数还是很方便的。因此，进入系统调用的时候，在内核栈上保存了发生系统调用现场的所有寄存器，一方面保存了hardware context，另外一方面，也就是获取了系统调用的参数。返回的时候，将返回值放到r0就OK了。 
+根据上面的描述，r0有两个作用，传递参数，返回结果。当把系统调用的结果放到r0的时候，通过r0传递的参数值就被覆盖了。
+本来，这也没有什么，但是有些场合是需要需要这两个值的： 
+1. ptrace （和debugger相关，这里就不再详细描述了）
+2. system call restart （和signal相关，这里就不再详细描述了）
+正因为如此，硬件上下文的寄存器中r0有两份，ARM_r0是传递的参数，并复制一份到ARM_ORIG_r0，当系统调用返回的时候，ARM_r0是系统调用的返回值。
+
+
+一些初始化操作
+^^^^^^^^^^^^^^^^^^^^^^^
+
+
+        .. code-block:: arm
+
+                ENTRY(vector_swi)
+                        ...
+                        zero_fp
+                	alignment_trap r10, ip, __cr_alignment
+                	enable_irq
+                	ct_user_exit @do nothing if CONFIG_CONTEXT_TRACKING not defined
+                	get_thread_info tsk
+                        ...
+                ENDPROC(vector_swi)
+
+
+zero_fp用来清除frame pointer，在debugger做栈的回溯的时候，当fp等于0的时候也就意味着到了最外层函数。
+对于kernel而言，来到这里，函数的调用跟踪就结束了，我们不可能一直回溯到用户空间的函数调用。
+
+
+enalbe_irq开启irq中断，这里为什么要开启irq中断呢？如果在处理系统调用的过程中，来了irq中断怎么办?
+
+我们考虑这么一个情况，假设只有一个处理器，其cpu上运行了一个线程，该线程不停的触发软中断(swi),
+此时网卡有数据到来，并且触发了irq中断。那么内核怎么办?
+
+内核可能的处理方式为:
+
+1. 在软中断的整个过程中，全程禁用irq直到软中断处理完成。
+2. 在软中断的整个过程中，全程开启irq中断。
+3. 在紧急时刻关闭irq,在非紧急时刻开启irq中断。
+
+对于方式1，假设我们正在浏览网页,但因为线程触发了软中断,而内核全程禁用了irq，倒霉的是该软中断的处理时间很长，长到难以忍受，由于内核
+没能及时处理网卡过来的irq中断，此时用户会感觉浏览网页非常缓慢，甚至一直没有响应，显然这种情况是不能接受的，因此这种处理方式也不能接受!
+
+对于方式2，同样的我们正在浏览网页或者下载视频，而如果内核在处理软中断的过程中全程开启了irq中断，倒霉的是网卡不停的触发irq中断，导致软中断
+一直被打断，此时用户线程一直的软中断请求一直的不到满足，显然这种情况也是不能接受,而且有一个致命的问题，如果用户线程的软中断请求上下文没有保存
+就触发了irq中断，此时将造成软中断请求上下文丢失。此时如果irq中断处理完成后，继续处理软中断，将会是未知的行为。
+
+好了前面的两种方式都是不可选的，也就只剩下了方式3了，在紧急时刻关闭irq，在非紧急时刻开启irq中断,从vector_swi处理代码中，我们可以看出开启irq中断
+是在保存完了调用上下文后开启的，这样的好处是当irq中断发生时，可以先去处理irq中断，等irq中断处理完成时，再继续软中断的处理，显然这样处理提高
+中断处理的吞吐量。这也就是为什么Linux要讲中断处理分成上半部分和下半部的原因。
+
+
+  
+如何获取系统调用号?
+^^^^^^^^^^^^^^^^^^^^^^^
+
+系统调用有两种规范，一种是老的OABI(系统调用号来自swi指令中)，另外一种是ARM ABI，也就是EABI（系统调用号来自r7）。
+如果想要兼容旧的OABI，那么我们需要定义OABI_COMPAT，这会带来一点系统调用的开销，同时让内核变大一点，
+对应的好处是使用旧的OABI规格的用户程序也可以运行在内核之上。
+当然，如果我们确定用户空间只是服从EABI规范，那么可以考虑不定义 ``CONFIG_OABI_COMPAT`` 。我们没有定义 ``CONFIG_OABI_COMPAT``
+
+对于EABI系统调用规范，系统调用号直接在r7寄存器中,不需要特别的代码。其他规范，只是取系统调用号的方式不同，这里不做讨论!
+
+
+在应用层中使用ARM EABI [2]_ 规范来进行系统调用．参考 ``lib/cobalt/arch/arm/include/asm/xenomai/syscall.h``,xenomai使用一个唯一的系统
+调用号和多个功能号来处理所有cobalt内核提供的系统调用.伪代码如下:
+        
+        .. code-block:: c
+
+                r0 = syscode;
+                r7 = syscall_number;
+                [r1...r5] = [arg1 ... arg5];
+                swi 0;
+
+* 寄存器r0:存放的是功能号，这里的的功能号就是内核中cobalt_syscalls数组的下标，用于索引对应的系统调用，详细参见 `系统调用`_
+* 寄存器r7:存放的是系统调用号，xenomai使用0x000F0042.
+
+
+.. [2] EABI:其中约定了在使用软中断时，参数传递方式和系统调用号的传递方式;
+
+相关代码如下:
+
+        .. code-block:: arm
+
+                ENTRY(vector_swi)
+                        ...
+                	/*
+                	 * Get the system call number.
+                	 */
+                        ...
+                ENDPROC(vector_swi)
+
+
+IPIPE软中断处理
+^^^^^^^^^^^^^^^^^^
+
+IPIPI软中断处理流程如下(以下是C的伪代码):
+
+        .. code-block:: c
+        
+                local_restart:
+                        if (scno != XENO_ARM_SYSCALL)
+                                goto slow_path;
+                        if(tsk->ipipe_flags & _TIP_HEAD == 0) /* task was normal thread */
+                                goto slow_path;
+                        if(ipipe_fastcall_hook(regs)<0) /* task was realtime thread */
+                	        goto no_fastcall;
+                	get_thread_info(&tsk);
+                        /* Notice:The ipipe_fastcall_hook maybe clear the _TIP_HEAD flag */
+                        if(tsk->ipipe_flags & _TIP_HEAD)
+                                goto fastcall_exit_check;
+                        __ipipe_root_sync();
+                	goto ret_slow_syscall;
+                fastcall_exit_check:
+                        if(tsk->ipipe_flags & _TIP_MAYDAY == 0)
+                                goto __ipipe_ret_to_user;
+                        __ipipe_call_mayday();
+                        goto __ipipe_ret_to_user;
+                no_fastcall:
+                slow_path:
+                        /* Notify the head domain about kernel event */
+                        if(tsk->ipipe_flags & _TIP_NOTIFY)
+                	        goto pipeline_syscall;
+                        if(scno!=XENO_ARM_SYSCALL)
+                	        goto root_syscall;
+                pipeline_syscall:
+                        /* When to call this ? */
+                	r0 = __ipipe_notify_syscall();
+                        if(tsk->ipipe_flags & _TIP_HEAD)
+                		goto __ipipe_ret_to_user;
+                	if(r0>0)
+                                goto ret_slow_syscall:
+
+1. 判断是否是xenomai的系统调用，如果是并且线程的ipipe_flags设置了TIP_HEAD [1]_ 标志，说明该swi是处于ipipe head域的实时线程产生的.
+   实时线程的软中断让 ``ipipe_fastcall_hook()`` 进行处理.
+
+2. ``ipipe_fastcall_hook`` 函数是使用gcc weak属性定义的，被xenomai重写了，如果没有xenomai，则让Linux对swi正常进行处理(参见 `linux软中断处理`_ )
+
+
+.. [1] TIP_HEAD:线程标志，表示线程运行在ipipe head域.
+
+
+linux软中断处理
+^^^^^^^^^^^^^^^^^^^^^^
+
+        .. code-block:: c
+
+               root_syscall:
+                        #define _TIF_SYSCALL_WORK (_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | _TIF_SYSCALL_TRACEPOINT | _TIF_SECCOMP)
+                        /* ldmia sp,{r0-r3}: load multiple,increase after */
+                        r0 = *sp;
+                        r1 = *(sp+1);
+                        r2 = *(sp+2);
+                        r3 = *(sp+3);
+
+                        /* stmdb	sp!, {r4, r5} : store multiple,decrease before [!: changed] */
+                        *--sp=r4;
+                        *--sp=r5;
+                        if(tsk->flags & _TIF_SYSCALL_WORK)
+                                goto __sys_trace
+                        if(scno<NR_syscalls)
+                                tbl[scno*4](r0,...r3);
+                                goto ret_fast_syscall;
+                        //other process
+               /*
+                	add	r1, sp, #S_OFF
+                2:	cmp	scno, #(__ARM_NR_BASE - __NR_SYSCALL_BASE)
+                	eor	r0, scno, #__NR_SYSCALL_BASE	@ put OS number back
+                	bcs	arm_syscall
+                	mov	why, #0				@ no longer a real syscall
+                	b	sys_ni_syscall			@ not private func
+                */
+  
+
+对于ARM处理器，标准过程调用约定使用r0～r3来传递参数，其余的参数压入栈中
+
+返回用户空间(ret_fast_syscall)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+See arch/arm/kernel/entry-common.S
+
+        .. code-block:: c
+                
+                /* see arm/include/asm/thread_info.h */
+                #define _TIF_WORK_MASK (_TIF_NEED_RESCHED | _TIF_SIGPENDING | _TIF_NOTIFY_RESUME | _TIF_UPROBE)
+
+
+                ret_fast_syscall:
+                        disable_irq_notrace();/* disable the irq interrupt */
+                        if(tsk->flags & (_TIF_SYSCALL_WORK|_TIF_WORK_MASK)) /* check the TIF_NEED_RESCHED flags */
+                                goto fast_work_pending;
+                        arch_ret_to_user(r1,lr);
+                        restore_user_regs(1,SOFF);
+                fast_work_pending:
+                        if(tsk0>flags & _TIF_SYSCALL_WORK)
+                                goto __sys_trace_return_nosave
+                slow_work_pending:
+                        /* r0 = sp,r1=tsk->flags,syscall= why */
+                        r0 = do_work_pending(regs,tsk->flags,why);
+                        if(r0 == 0)
+                                goto no_work_pending;
+                        goto local_restart;
+
+
+这里面最著名的flag就是_TIF_NEED_RESCHED，有了这个flag，说明有调度需求。由此可知在系统调用返回用户空间的时候上有一个调度点。其他的flag和我们这里的场景无关，这里就不描述了，总而言之，如果需要有其他额外的事情要处理，我们需要跳转到fast_work_pending ，否则调用restore_user_regs返回用户空间现场
+
+恢复用户空间的代码:
+
+
+        .. code-block:: arm
+
+                .macro	restore_user_regs, fast = 0, offset = 0
+	                uaccess_enable r1, isb=0
+	                @ ARM mode restore
+	                mov	r2, sp
+	                ldr	r1, [r2, #\offset + S_PSR]	@ get calling cpsr
+	                ldr	lr, [r2, #\offset + S_PC]!	@ get pc
+	                msr	spsr_cxsf, r1			@ save in spsr_svc
+	                ldmdb	r2, {r1 - lr}^			@ get calling r1 - lr
+	                mov	r0, r0				@ ARMv5T and earlier require a nop
+	                add	sp, sp, #\offset + PT_REGS_SIZE
+	                movs	pc, lr				@ return & move spsr_svc into cpsr
+	        .endm
+
+
+
+
+整个代码比较简单，就是用进入系统调用时候压入内核栈的值来进行用户现场的恢复，其中一个细节是内核栈的操作，
+在调用 ``movs    pc, lr`` 返回用户空间现场之前, ``add    sp, sp, #\offset + S_FRAME_SIZE`` 
+指令确保用户栈上是空的。此外，我们需要考虑返回用户空间时候的r0设置问题，毕竟它承载了本次系统调用的返回值，这时候的r0有两种情况：
+
+1. 在没有pending work的情况下（fast等于1），r0保存了sys_xxx函数的返回值
+2. 在有pending work的情况下（fast等于0），struct pt_regs（返回用户空间的现场）中的r0保存了sys_xxx函数的返回值
+
+restore_user_regs还有一个参数叫做offset，我们知道，在进入系统调用的时候，我们把参数5和参数6压入栈上，
+因此产生了到pt_regs8个字节的偏移，这里需要补偿回来。
+
+
+
+
+系统调用
+~~~~~~~~~~~~~~~~~~~
+
+
+cobalt内核的系统调用在 ``kernel/cobalt/posix/*.c`` 实现,使用宏 ``COBALT_SYSCALL`` 进行定义,该宏在 ``kernel/cobalt/posix/syscall.h`` 文件中定义:
+
+        .. code-block:: c
+        
+            #define COBALT_SYSCALL(__name, __mode, __args)	\
+        	    long CoBaLt_ ## __name __args
+
+从宏定义来看所有系统调用的返回参数是long型，并且系统名字命名方式为: CoBaLt_XXXXX，比如:
+
+        .. code-block:: c
+        
+            COBALT_SYSCALL(fcntl, current, (int fd, int cmd, int arg))
+            {
+            	return rtdm_fd_fcntl(fd, cmd, arg);
+            }
+        
+            /* After preprocess : */
+            long CoBaLt_fcntl (int fd,int cmd int arg)
+            {
+                return rtdm_fd_fcntl(fd,cmd,arg);
+            }
+
+系统调用功能号在 ``include/cobalt/uapi/syscall.h`` 中定义
+
+        .. code-block:: c
+        
+            #define sc_cobalt_bind				0
+            #define sc_cobalt_thread_create			1
+            #define sc_cobalt_thread_getpid			2
+            #define sc_cobalt_thread_setmode		3
+            #define sc_cobalt_thread_setname		4
+            #define sc_cobalt_thread_join			5
+            #define sc_cobalt_thread_kill			6
+            #define sc_cobalt_thread_setsvector_swi
+            ...
+            ...
+
+在 ``kernel/cobalt/posix/syscall.c`` 定义了一个数组 ``cobalt_syscalls`` 数组元素都是系统调用指针，
+数组下标则是系统调用的功能号(syscode)，其中 ``syscall_entries.h`` 是使用
+脚本动态生成的！该文件定义了宏 ``__COBALT_CALL_ENTRIES`` 负责初始化 ``cobalt_syscalls`` 数组，
+而 ``__COBALT_CALL_ENTRY`` 宏则是初始化 ``cobalt_syscalls`` 数组的一个元素,使用gcc扩展对一个元素进行赋值类似于
+
+        .. code-block:: c
+        
+            static const cobalt_syshand cobalt_syscalls[] = {
+                [sc_cobalt_bind] = CoBaLt_bind,
+                [sc_cobalt_thread_create] = Coalt_thread_create,
+                .....
+            };
+        
+        
+            /* initialise the cobalt_syscalls */
+            #define __COBALT_CALL_ENTRY(__name)				\
+            	[sc_cobalt_ ## __name] = __syshand__(__name),		\
+            	__COBALT_CALL32_ENTRY(__name, __syshand__(__name))
+            
+            #include "syscall_entries.h"
+             
+            static const cobalt_syshand cobalt_syscalls[] = {
+                __COBALT_CALL_NI
+                __COBALT_CALL_ENTRIES
+            #ifdef CONFIG_XENO_ARCH_SYS3264
+            #include <asm/xenomai/syscall32-table.h>
+            #endif
+            };
+
+
+其整体调用流程如下图：
+ 
+.. image:: images/system-call.png
+
+各种系统调用的处理
+~~~~~~~~~~~~~~~~~~~
+
+在xenomai双内核中系统调用有4种情况:
+
+* 实时线程调用xenomai系统调用-->ipipe_fastcall_hook
+* 实时线程调用普通系统调用
+* 普通线程调用xenomai系统调用,
+* 普通线程调用普通系统调用，直接调用系统调用就好
+
+对于实时线程其 tsk->ipipe_flags设置了_TIP_HEAD标志，普通线程调用xenomai系统调用thread_create时，设置TIP_NOTIFY标志
+
+
+        
+
+外部中断(IRQ)
+----------------
+
+外部中断在 ``arm/kernel/entry-armv.S`` 中实现,其中vector_irq，主要完成模式切换(即切换到svc模式)和中断的分发;
+
+当中断发生时，处于CPU处于usr模式下，则调用 ``__irq_usr`` ，如CPU处于svc模式下，则调用 ``__irq_svc``
+
+
+用户态IRQ
+~~~~~~~~~~~~~~~~~
+
+总体流程如下:
+
+
+
+.. image:: images/irq-usr.png
+
+
+        
+.. code-block:: arm
+        
+
+        _irq_usr:
+               /* keep the usr register */
+               usr_entry
+               kuser_cmpxchg_check
+               irq_handler
+               bne     __ipipe_ret_to_user_irqs_disabled
+               get_thread_info tsk
+               mov     why, #0
+               b       ret_to_user_from_irq
+               ....
+
+* user_entry:保存用户寄存器
+* __ipipe_grab_ipi: 用于处理IPI,参见核间中断处理 `__ipipe_grab_ipi()`_
+* __ipipe_grab_irq: 用于处理IO中断,参见IO中断处理 `__ipipe_grab_irq()`_
+
+
+irq_handler
+^^^^^^^^^^^^^
+
+irq_handler的处理有两种配置。一种是配置了CONFIG_MULTI_IRQ_HANDLER。这种情况下，linux kernel允许run time设定irq handler。
+如果我们需要一个linux kernel image支持多个平台，这是就需要配置这个选项。另外一种是传统的linux的做法，
+irq_handler实际上就是arch_irq_handler_default，具体代码如下:
+
+        .. code-block:: text
+
+                /*
+                 * Interrupt handling.
+                 */
+                        .macro  irq_handler
+                #ifdef CONFIG_MULTI_IRQ_HANDLER 
+                        ldr     r1, =handle_arch_irq
+                        mov     r0, sp
+                        badr    lr, 9997f @Set the return address
+                        ldr     pc, [r1]
+                #else
+                        arch_irq_handler_default
+                #endif
+                9997:
+                #ifdef CONFIG_IPIPE
+                        bl      __ipipe_check_root_interruptible
+                        cmp     r0, #1
+                #endif /* CONFIG_IPIPE */
+                        .endm
+
+
+对于配置了 ``CONFIG_MULTI_IRQ_HANDLER`` 调用直接调用 handle_arch_irq机可，当然,要先准备好参数传递和返回地址设定。调用形式如下:
+
+        .. code-block:: c 
+
+                handle_arch_irq(regs);
+
+
+对于rpi3是在注册中断控制器驱动时，初始化的 handle_arch_irq函数指针：
+
+        .. code-block:: c
+        
+                static int __init bcm2836_arm_irqchip_l1_intc_of_init(struct device_node *node,
+                                                                      struct device_node *parent)
+                {
+                        intc.base = of_iomap(node, 0);
+                        ...
+                
+                        ...
+                        set_handle_irq(bcm2836_arm_irqchip_handle_irq);
+                        return 0;
+                }
+
+
+
+arch_irq_handler_default
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+See arch/arm/include/asm/entry-macro-multi.S
+
+对于没有配置CONFIG_MULTI_IRQ_HANDLER的情况来说，要稍显得复杂，代码如下:
+
+        .. code-block:: arm
+                
+                                .macro  arch_irq_handler_default
+                                get_irqnr_preamble r6, lr
+        
+                        1:      get_irqnr_and_base r0, r2, r6, lr
+                                movne   r1, sp
+                                @
+                                @ routine called with r0 = irq number, r1 = struct pt_regs *
+                                @
+                                badrne  lr, 1b
+                                bne     __ipipe_grab_irq
+                        
+                                /*
+                                 * XXX
+                                 *
+                                 * this macro assumes that irqstat (r2) and base (r6) are
+                                 * preserved from get_irqnr_and_base above
+                                 */
+                                ALT_SMP(test_for_ipi r0, r2, r6, lr)
+                                ALT_UP_B(9997f)
+                                movne   r1, sp
+                                badrne  lr, 1b
+                                bne     __ipipe_grab_ipi
+                        9997:
+                                .endm
+        
+
+其中 ``get_irqnr_preamble`` 和  ``get_irqnr_and_base`` 是和机器相关的了，所谓机器相关也就是说和系统中的中断控制器相关了。
+get_irqnr_preamble是为中断处理做准备，有些平台根本不需要这个步骤，直接定义为空即可。get_irqnr_and_base 有四个参数，
+分别是：r0保存了本次解析的irq number，r2是irq状态寄存器的值，r6是irq controller的base address，lr是scratch register.
+
+其中 ``badrne lr,1b`` 将返回地址设定为符号1，也就是说要不断的解析irq状态寄存器的内容，得到IRQ number，直到所有的irq number处理完毕
+
+对于ARM平台而言，我们推荐使用第一种方法，因为从逻辑上讲，中断处理就是需要根据当前的硬件中断系统的状态，转换成一个IRQ number，
+然后调用该IRQ number的处理函数即可。通过get_irqnr_and_base这样的宏定义来获取IRQ是旧的ARM SOC系统使用的方法，
+它是假设SOC上有一个中断控制器，硬件状态和IRQ number之间的关系非常简单。
+但是实际上，ARM平台上的硬件中断系统已经是越来越复杂了，需要引入interrupt controller级联，irq domain等等概念，
+因此，使用第一种方法优点更多。
+
+
+
+bcm_2836_arm_irqchip_handle_irq
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+        .. code-block:: c
+
+                static void
+                __exception_irq_entry bcm2836_arm_irqchip_handle_irq(struct pt_regs *regs)
+                {
+                        int cpu = raw_smp_processor_id();
+                        u32 stat;
+                
+                        /* read the interrupt stat register */
+                        stat = readl_relaxed(intc.base + LOCAL_IRQ_PENDING0 + 4 * cpu);
+                        if (stat & BIT(LOCAL_IRQ_MAILBOX0)) {
+                                void __iomem *mailbox0 = (intc.base +
+                                                          LOCAL_MAILBOX0_CLR0 + 16 * cpu);
+                                u32 mbox_val = readl(mailbox0);
+                                u32 ipi = ffs(mbox_val) - 1;
+                
+                                writel(1 << ipi, mailbox0);
+                                ipipe_handle_multi_ipi(ipi, regs); /* process the ipi */
+                        } else if (stat) {
+                                u32 hwirq = ffs(stat) - 1;
+                
+                                ipipe_handle_domain_irq(intc.domain, hwirq, regs); /* process irq */
+                        }
+                }
+
+读取中断状态寄存器，判断是否是核间中断，是核间中断则交给  ``ipipe_handle_multi_ipi``进行处理，是io中断则交给 ``ipipe_handle_domain_irq`` 进行处理
+        
+
+__ipipe_grab_ipi()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+该函数主要用于核间中断处理.
+
+        .. code-block:: c
+        
+                 /* hw IRQs off */
+        
+                static inline void ipipe_handle_multi_ipi(int irq, struct pt_regs *regs)
+                {
+                        __ipipe_grab_ipi(irq, regs);
+                }
+        
+                asmlinkage void __exception __ipipe_grab_ipi(unsigned svc, struct pt_regs *regs)
+                {
+                        int virq = IPIPE_IPI_BASE + svc;
+                
+                        /*
+                         * Virtual NMIs ignore the root domain's stall
+                         * bit. When caught over high priority
+                         * domains, virtual VMIs are pipelined the
+                         * usual way as normal interrupts.
+                         */
+                        if (virq == IPIPE_SERVICE_VNMI && __ipipe_root_p)
+                                __ipipe_do_vnmi(IPIPE_SERVICE_VNMI, NULL);
+                        else
+                                __ipipe_dispatch_irq(virq, IPIPE_IRQF_NOACK);
+                
+                        __ipipe_exit_irq(regs);
+                }
+
+
+
+__ipipe_grab_irq()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+该函数主要用于IO中断处理
+
+        .. code-block:: c
+
+
+                static inline void ipipe_handle_multi_irq(int irq, struct pt_regs *regs)
+                {
+                        __ipipe_grab_irq(irq, regs);
+                }
+
+
+                static inline
+                int ipipe_handle_domain_irq(struct irq_domain *domain,
+                			    unsigned int hwirq, struct pt_regs *regs)
+                {
+                	unsigned int irq;
+                        /* dwj find map irq number from irq domain */
+                	irq = irq_find_mapping(domain, hwirq);
+                	ipipe_handle_multi_irq(irq, regs);
+                
+                	return 0;
+                }
+        
+                /* hw irqs off */
+                asmlinkage void __exception __ipipe_grab_irq(int irq, struct pt_regs *regs)
+                {
+                        struct ipipe_percpu_data *p = __ipipe_raw_cpu_ptr(&ipipe_percpu);
+                
+                        ipipe_trace_irq_entry(irq);
+                
+                        if (p->hrtimer_irq == -1)
+                                goto copy_regs;
+                
+                        if (irq == p->hrtimer_irq) {
+                                /*
+                                 * Given our deferred dispatching model for regular IRQs, we
+                                 * only record CPU regs for the last timer interrupt, so that
+                                 * the timer handler charges CPU times properly. It is assumed
+                                 * that other interrupt handlers don't actually care for such
+                                 * information.
+                                 */
+                #ifdef CONFIG_IPIPE_DEBUG_INTERNAL
+                                if (__ipipe_mach_hrtimer_debug)
+                                        __ipipe_mach_hrtimer_debug(irq);
+                #endif /* CONFIG_IPIPE_DEBUG_INTERNAL */
+                          copy_regs:
+                                p->tick_regs.ARM_cpsr =
+                                        (p->curr == &p->root
+                                         ? regs->ARM_cpsr
+                                         : regs->ARM_cpsr | PSR_I_BIT);
+                                p->tick_regs.ARM_pc = regs->ARM_pc;
+                        }
+                
+                        __ipipe_dispatch_irq(irq, 0);
+                
+                        ipipe_trace_irq_exit(irq);
+                
+                        __ipipe_exit_irq(regs);
+                }
+
+
+
+
+__ipipe_dispatch_irq
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+该函数主要用户IRQ中断的分发,在讨论IRQ中断分发之前，我们先了解一下，中断的触发类型:
+
+1. 电平触发中断(Level-Triggered Interrupts)，其时序图如下:
+
+   .. image:: images/level-interrupt.png
+
+2. 边缘触发中断(Edge-Triggered Interrupts),其时序图如下:
+
+   .. image:: images/edge-interrupt.png
+
+粘滞(Sticky)位:中断信号可以是“粘滞”(sticky)的，这便意味着中断线保持有效状态(高电平)，直到它被读取
+或者清除为止。在这种情况下，如果中断组件被配置为RISING_EDGE，那么将执行一次ISR。如果中断组件被配置为LEVEL，
+那么ISR将重复被执行。为解决这个问题，需要使用由组件提供的API清除中断源。请查看中断源的组件数据手册。
+
+
+
+IRQ中断分发，主要在函数　``__ipipe_dispatch_irq()`` 中完成，其主要由3个分支组成:
+
+
+        .. code-block:: c
+        
+                void __ipipe_dispatch_irq(unsigned int irq, int flags) /* hw interrupts off */
+                {
+                	struct ipipe_domain *ipd;
+                	struct irq_desc *desc;
+                	unsigned long control;
+                	int chained_irq;
+                
+                	/*
+                	 * Survival kit when reading this code:
+                	 *
+                	 * - we have two main situations, leading to three cases for
+                	 *   handling interrupts:
+                	 *
+                	 *   a) the root domain is alone, no registered head domain
+                	 *      => all interrupts go through the interrupt log
+                	 *   b) a head domain is registered
+                	 *      => head domain IRQs go through the fast dispatcher
+                	 *      => root domain IRQs go through the interrupt log
+                	 *
+                	 * - when no head domain is registered, ipipe_head_domain ==
+                	 *   ipipe_root_domain == &ipipe_root.
+                	 *
+                	 * - the caller tells us whether we should acknowledge this
+                	 *   IRQ. Even virtual IRQs may require acknowledge on some
+                	 *   platforms (e.g. arm/SMP).
+                	 *
+                	 * - the caller tells us whether we may try to run the IRQ log
+                	 *   syncer. Typically, demuxed IRQs won't be synced
+                	 *   immediately.
+                	 *
+                	 * - multiplex IRQs most likely have a valid acknowledge
+                	 *   handler and we may not be called with IPIPE_IRQF_NOACK
+                	 *   for them. The ack handler for the multiplex IRQ actually
+                	 *   decodes the demuxed interrupts.
+                	 */
+                
+                #ifdef CONFIG_IPIPE_DEBUG
+                	if (unlikely(irq >= IPIPE_NR_IRQS) ||
+                	    (irq < IPIPE_NR_ROOT_IRQS && irq_to_desc(irq) == NULL)) {
+                		pr_err("I-pipe: spurious interrupt %u\n", irq);
+                		return;
+                	}
+                #endif
+                	/*
+                	 * CAUTION: on some archs, virtual IRQs may have acknowledge
+                	 * handlers. Multiplex IRQs should have one too.
+                	 */
+                	if (unlikely(irq >= IPIPE_NR_ROOT_IRQS)) {
+                		desc = NULL;
+                		chained_irq = 0;
+                	} else {
+                		desc = irq_to_desc(irq);
+                		chained_irq = desc ? ipipe_chained_irq_p(desc) : 0;
+                	}
+                	if (flags & IPIPE_IRQF_NOACK)
+                		IPIPE_WARN_ONCE(chained_irq);
+                	else {
+                		ipd = ipipe_head_domain;
+                		control = ipd->irqs[irq].control;
+                		if ((control & IPIPE_HANDLE_MASK) == 0)
+                			ipd = ipipe_root_domain;
+                		if (ipd->irqs[irq].ackfn)
+                			ipd->irqs[irq].ackfn(desc);
+                		if (chained_irq) {
+                			if ((flags & IPIPE_IRQF_NOSYNC) == 0)
+                				/* Run demuxed IRQ handlers. */
+                				goto sync;
+                			return;
+                		}
+                	}
+                
+                	/*
+                	 * Sticky interrupts must be handled early and separately, so
+                	 * that we always process them on the current domain.
+                	 */
+                	ipd = __ipipe_current_domain;
+                	control = ipd->irqs[irq].control;
+                	if (control & IPIPE_STICKY_MASK)
+                		goto log;
+                
+                	/*
+                	 * In case we have no registered head domain
+                	 * (i.e. ipipe_head_domain == &ipipe_root), we always go
+                	 * through the interrupt log, and leave the dispatching work
+                	 * ultimately to __ipipe_sync_pipeline().
+                	 */
+                	ipd = ipipe_head_domain;
+                	control = ipd->irqs[irq].control;
+                	if (ipd == ipipe_root_domain)
+                		/*
+                		 * The root domain must handle all interrupts, so
+                		 * testing the HANDLE bit would be pointless.
+                		 */
+                		goto log;
+                
+                	if (control & IPIPE_HANDLE_MASK) {
+                		if (unlikely(flags & IPIPE_IRQF_NOSYNC))
+                			__ipipe_set_irq_pending(ipd, irq);
+                		else
+                			dispatch_irq_head(irq);
+                		return;
+                	}
+                
+                	ipd = ipipe_root_domain;
+                log:
+                	__ipipe_set_irq_pending(ipd, irq);
+                
+                	if (flags & IPIPE_IRQF_NOSYNC)
+                		return;
+                
+                	/*
+                	 * Optimize if we preempted a registered high priority head
+                	 * domain: we don't need to synchronize the pipeline unless
+                	 * there is a pending interrupt for it.
+                	 */
+                	if (!__ipipe_root_p &&
+                	    !__ipipe_ipending_p(ipipe_this_cpu_head_context()))
+                		return;
+                sync:
+                	__ipipe_sync_pipeline(ipipe_head_domain);
+                }
+
+
+
+1. 在没有注册head domain的情况,只有root domain (Condition 1)
+2. 在注册了head domain的情况下:
+        * head domain IRQs go through the fast dispatcher (Condition 2)
+        * root domain IRQs go through the interrupt log (Condition 3)
+
+
+
+对于情况1，则是没有xenomai的情况，也就是只打了ipipe补丁的情况，这种情况直接调用驱动注册的irq handler即可:
+
+        .. code-block:: c
+        
+                void __ipipe_dispatch_irq(unsigned int irq, int flags) /* hw interrupts off */
+                {
+        	        //__ipipe_set_irq_pending(ipipe_root_domain, irq);
+        	        //__ipipe_sync_pipeline(ipipe_root_domain);
+                        for (;;) {
+        		        irq = __ipipe_next_irq(p);
+                                if (irq < 0)
+        			        break;
+        			ipd->irqs[irq].handler(irq, ipd->irqs[irq].cookie);
+                        }
+                }
+
+对于情况2,注册了head domain,使用 `rtdm_irq_request()`_ 注册的irq都设置 IPIPE_HANDLE_MASK,表示由IPIPE来处理该irq中断.
+
+        .. code-block:: c
+
+                void __ipipe_dispatch_irq(unsigned int irq, int flags) /* hw interrupts off */
+                {
+                	struct ipipe_domain *ipd;
+                        ipd = ipipe_head_domain;
+                	if (ipd->irqs[irq].ackfn)
+                		ipd->irqs[irq].ackfn(desc);
+                                
+                        dispatch_irq_head(irq);
+                        return;
+                
+                }
+
+参见 `dispatch_irq_head`_
+
+
+对于情况3,注册了head domain，但是该中断是由request_irq注册的，即该中断属于root_domain,则此时和情况1相识。
+
+        .. code-block:: c
+
+                void __ipipe_dispatch_irq(unsigned int irq, int flags) /* hw interrupts off */
+                {
+        	        //__ipipe_set_irq_pending(ipipe_root_domain, irq);
+        	        //__ipipe_sync_pipeline(ipipe_root_domain);
+                        for (;;) {
+        		        irq = __ipipe_next_irq(p);
+                                if (irq < 0)
+        			        break;
+        			ipd->irqs[irq].handler(irq, ipd->irqs[irq].cookie);
+                        }
+                }
+
+
+
+
+
+dispatch_irq_head
+^^^^^^^^^^^^^^^^^^^^^
+
+        .. code-block:: c
+
+                static void dispatch_irq_head(unsigned int irq) /* hw interrupts off */
+                {
+                	struct ipipe_percpu_domain_data *p = ipipe_this_cpu_head_context(), *old;
+                	struct ipipe_domain *head = p->domain;
+                
+                	if (unlikely(test_bit(IPIPE_STALL_FLAG, &p->status))) {
+                		__ipipe_set_irq_pending(head, irq);
+                		return;
+                	}
+                
+                	/* Switch to the head domain if not current. */
+                	old = __ipipe_current_context;
+                	if (old != p)
+                		__ipipe_set_current_context(p);
+                
+                	p->irqall[irq]++;
+                	__set_bit(IPIPE_STALL_FLAG, &p->status);
+                	barrier();
+                	head->irqs[irq].handler(irq, head->irqs[irq].cookie);
+                	__ipipe_run_irqtail(irq);
+                	hard_local_irq_disable();
+                	p = ipipe_this_cpu_head_context();
+                	__clear_bit(IPIPE_STALL_FLAG, &p->status);
+                
+                	/* Are we still running in the head domain? */
+                	if (likely(__ipipe_current_context == p)) {
+                		/* Did we enter this code over the head domain? */
+                		if (old->domain == head) {
+                			/* Yes, do immediate synchronization. */
+                			if (__ipipe_ipending_p(p))
+                				__ipipe_sync_stage();
+                			return;
+                		}
+                		__ipipe_set_current_context(ipipe_this_cpu_root_context());
+                	}
+                
+                	/*
+                	 * We must be running over the root domain, synchronize
+                	 * the pipeline for high priority IRQs (slow path).
+                	 */
+                	__ipipe_do_sync_pipeline(head);
+                }
+
+
+rtdm_irq_request()
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+        .. code-block:: c
+
+                /* see kernel/xenomai/rtdm/drvlib.c */
+
+                int rtdm_irq_request(rtdm_irq_t *irq_handle, unsigned int irq_no,
+                                     rtdm_irq_handler_t handler, unsigned long flags,
+                                     const char *device_name, void *arg)
+                {
+                        int err;
+                
+                        if (!XENO_ASSERT(COBALT, xnsched_root_p()))
+                                return -EPERM;
+                
+                        err = xnintr_init(irq_handle, device_name, irq_no, handler, NULL, flags);
+                        if (err)
+                                return err;
+                
+                        err = xnintr_attach(irq_handle, arg);
+                        if (err) {
+                                xnintr_destroy(irq_handle);
+                                return err;
+                        }
+                
+                        xnintr_enable(irq_handle);
+                
+                        return 0;
+                }
+
+
+                /* see ./kernel/xenomai/intr.c */
+                static inline int xnintr_irq_attach(struct xnintr *intr)
+                {
+                	struct xnintr_vector *vec = vectors + intr->irq;
+                	struct xnintr *prev, **p = &vec->handlers;
+                	int ret;
+                
+                	prev = *p;
+                	if (prev) {
+                		/* Check on whether the shared mode is allowed. */
+                		if ((prev->flags & intr->flags & XN_IRQTYPE_SHARED) == 0 ||
+                		    (prev->iack != intr->iack)
+                		    || ((prev->flags & XN_IRQTYPE_EDGE) !=
+                			(intr->flags & XN_IRQTYPE_EDGE)))
+                			return -EBUSY;
+                
+                		/*
+                		 * Get a position at the end of the list to insert the
+                		 * new element.
+                		 */
+                		while (prev) {
+                			p = &prev->next;
+                			prev = *p;
+                		}
+                	} else {
+                		/* Initialize the corresponding interrupt channel */
+                		void (*handler) (unsigned, void *) = xnintr_irq_handler;
+                
+                		if (intr->flags & XN_IRQTYPE_SHARED) {
+                			if (intr->flags & XN_IRQTYPE_EDGE)
+                				handler = xnintr_edge_vec_handler;
+                			else
+                				handler = xnintr_vec_handler;
+                
+                		}
+                		vec->unhandled = 0;
+                
+                		ret = ipipe_request_irq(&xnsched_realtime_domain,
+                					intr->irq, handler, intr,
+                					(ipipe_irq_ackfn_t)intr->iack);
+                		if (ret)
+                			return ret;
+                	}
+                
+                	intr->next = NULL;
+                	/*
+                	 * Add the given interrupt object. No need to synchronise with
+                	 * the IRQ handler, we are only extending the chain.
+                	 */
+                	*p = intr;
+                
+                	return 0;
+                }
+
+                /* see ./kernel/ipipe/core.c */
+                int ipipe_request_irq(struct ipipe_domain *ipd,
+		      unsigned int irq,
+		      ipipe_irq_handler_t handler,
+		      void *cookie,
+		      ipipe_irq_ackfn_t ackfn)
+                {
+                	unsigned long flags;
+                	int ret = 0;
+                
+                #ifndef CONFIG_IPIPE_LEGACY
+                	ipipe_root_only();
+                #endif /* CONFIG_IPIPE_LEGACY */
+                
+                	if (handler == NULL ||
+                	    (irq >= IPIPE_NR_XIRQS && !ipipe_virtual_irq_p(irq)))
+                		return -EINVAL;
+                
+                	raw_spin_lock_irqsave(&__ipipe_lock, flags);
+                
+                	if (ipd->irqs[irq].handler) {
+                		ret = -EBUSY;
+                		goto out;
+                	}
+                
+                	if (ackfn == NULL)
+                		ackfn = ipipe_root_domain->irqs[irq].ackfn;
+                
+                	ipd->irqs[irq].handler = handler;
+                	ipd->irqs[irq].cookie = cookie;
+                	ipd->irqs[irq].ackfn = ackfn;
+                	ipd->irqs[irq].control = IPIPE_HANDLE_MASK;
+                
+                	if (irq < IPIPE_NR_ROOT_IRQS)
+                		__ipipe_enable_irqdesc(ipd, irq);
+                out:
+                	raw_spin_unlock_irqrestore(&__ipipe_lock, flags);
+                
+                	return ret;
+                }
+                EXPORT_SYMBOL_GPL(ipipe_request_irq);
+                
+
+内核态IRQ
+~~~~~~~~~~~~~~~~~~
+
+ 
+
+
+快速中断(FIQ)
+-------------------
+
+
+
+irq domain
+-------------------
+
+在linux kernel中，我们使用下面两个ID来标识一个来自外设的中断：
+
+1. IRQ number。CPU需要为每一个外设中断编号，我们称之IRQ Number。
+这个IRQ number是一个虚拟的interrupt ID，和硬件无关，仅仅是被CPU用来标识一个外设中断。
+
+2. HW interrupt ID。对于中断控制器而言，它收集了多个外设的interrupt request line并向上传递，因此，中断控制器需要对外设中断进行编码。
+中断控制器用HW interrupt ID来标识外设的中断。在中断控制器级联的情况下，仅仅用HW interrupt ID已经不能唯一标识一个外设中断，
+还需要知道该HW interrupt ID所属的中断控制器(HW interrupt ID在不同的中断控制器上是会重复编码的）.
+
+这样，CPU和中断控制器在标识中断上就有了一些不同的概念，但是，对于驱动工程师而言，我们和CPU视角是一样的，
+我们只希望得到一个IRQ number，而不关系具体是那个中断控制器上的那个HW interrupt ID。
+这样一个好处是在中断相关的硬件发生变化的时候，驱动软件不需要修改。
+因此，内核中的中断子系统需要提供一个将HW interrupt ID映射到IRQ number上来的机制.
+
+
+
+历史
+~~~~~~~~~~~~~~~~~
+
+关于HW interrupt ID映射到IRQ number上这事，在过去系统只有一个中断的时候还是很简单的，
+中断控制器上实际的HW interrupt line的编号可以直接变成IRQ number。
+例如我们大家都熟悉的SOC内嵌的中断控制器，这种controller多半有中断状态寄存器，
+这个寄存器可能有64个bit（也可能更多），每个bit就是一个IRQ number，可以直接进行映射。
+这时候，GPIO的中断在中断控制器的状态寄存器中只有一个bit，因此所有的GPIO中断只有一个IRQ number，
+在该通用GPIO中断的irq handler中进行duplex，将各个具体的GPIO中断映射到其相应的IRQ number上。
+
+随着内核的发展，将中断控制器抽象成irqchip这个概念越来越流行，甚至GPIO controller也可以被看出一个中断控制器芯片，
+这样，系统中至少有两个中断控制器了，一个传统意义的中断控制器，一个是GPIO controller类型的中断控制器。
+随着系统复杂度加大，外设中断数据增加，实际上系统可能需要多个中断控制器进行级联，面对这样的趋势，内核工程师如何应对？
+答案就是irq domain这个概念。
+
+我们听说过很多的domain，power domain，clock domain等等，所谓domain，就是领域，范围的意思，也就是说，任何的定义超出这个范围就没有意义了。
+系统中所有的中断会形成树状结构，对于每个中断都可以连接若干个外设的中断请求（我们称之interrupt source），中断控制器会对连接其上的interrupt source
+(根据其在中断控制器中的物理特性)进行编号(也就是HW interrupt ID了)。但这个编号仅仅限制在本中断控制器范围内。
+
+
+具体如何进行映射是中端自己的事情，不过，有软件架构思想的工程师更愿意对形形色色的中断控制进行抽象，对如何从HW interrupt ID到IRQ number
+映射关系上进行进一步的抽象。因此，中断处理模块中有一个irq domain的子模块，该模块将这种映射关系分成了三类：
+
+* 线性映射
+* 基数树映射(Radix Tree Map)
+* 没有映射(No Map)
+
+
+初始化
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+其总体流程如下:
+
+.. image:: images/int-subsystem.png
+
+
+
+i-pipe domain
+----------------
+
+
+在xenomai双内核中有两i-pipe domain分别是root domain [3]_ 和head domain [4]_，
+两个domain的优先级不同,head domain最高，其次是root domain.在内核实现中使用类 struct ipipe_domain对两个domain进行抽象．
+
+在ipipe初始化时，只是初始化了root domain(参见 `__ipipe_init_early()`_ ),而head domain在xenomai中进行初始化(参见 :ref:`mach_setup` )
+
+
+.. [3] 该domain即linux domain,也被称为secondary domain
+.. [4] 该domain 即xenomai domain,也被称为master domain
+
+
+
+
+
+其初始化完成后，如下图：
+
+
+.. image:: images/ipipe-domain.png
+
+
+
+其中,每个cpu绑定了一个cpu变量ipipe_percpu,该变量为struct ipipe_percpu_data的结构体:
+
+        .. code-block:: c
+
+                struct ipipe_percpu_data {
+                	struct ipipe_percpu_domain_data root;
+                	struct ipipe_percpu_domain_data head;
+                	struct ipipe_percpu_domain_data *curr;
+                	struct pt_regs tick_regs;
+                	int hrtimer_irq;
+                	struct task_struct *task_hijacked;
+                	struct task_struct *rqlock_owner;
+                	struct ipipe_vm_notifier *vm_notifier;
+                	unsigned long nmi_state;
+                	struct mm_struct *active_mm;
+                };
+
+* root:用于保存root domain的信息
+* head:用于保存head domain的信息
+* curr:该指针指向当前的ipipe domain
+
+ipipe_root和xnsched_realtime_domain为struct ipipe_domain类型的结构体，即root domain和head domain:
+
+        .. code-block:: c
+        
+                struct ipipe_domain {
+                	int context_offset;
+                	struct ipipe_irqdesc {
+                		unsigned long control;
+                		ipipe_irq_ackfn_t ackfn;
+                                /* The irq handler */
+                		ipipe_irq_handler_t handler;
+                		void *cookie;
+                	} ____cacheline_aligned irqs[IPIPE_NR_IRQS];
+                        ...
+                        ...
+                	struct ipipe_legacy_context legacy;
+                };
+
+* 在初始化ipipe_root后，irqs[0-1023].hander都指向 ``__ipipe_do_IRQ`` 用于处理IO中断,而irqs[1024-1055]都指向 ``__ipipe_do_IPI``
+  用于处理核间中断. 中断处理函数 ``__ipipe_do_IRQ`` 和 ``__ipipe_do_IPI`` 都是完成irq中断的分发
+* control:中断控制位,可能设置的位为 ``IPIPE_HANDLE_FLAG`` , ``IPIPE_STICKY_FLAG`` , ``IPIPE_LOCK_FLAG``
+* ackfn:在中断处理中，清除中断标志被称为acknowledgement,由外设驱动注册irq时，填写该回调函数
+* handler:对应irq的中断处理函数
+
+
+__ipipe_init_early()
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+        .. code-block:: c
+        
+                void __init __ipipe_init_early(void)
+                {
+                        /* irq number ranges [0.....1024......1055]  1024+32
+                         * .0-1023                               __ipipe_do_IRQ
+                         * .1024 IPI_WAKEUP                      __ipipe_do_IPI
+                         * .1025 IPI_TIMER                       __ipipe_do_IPI 
+                         * .1026 IPI_RESCHEDULE                  __ipipe_do_IPI
+                         * .1027 IPI_CALL_FUNC                   __ipipe_do_IPI
+                         * .1028 IPI_CPU_STOP                    __ipipe_do_IPI
+                         * .1029 IPI_IRQ_WORK                    __ipipe_do_IPI
+                         * .1030 IPI_COMPLETION                  __ipipe_do_IPI
+                         * .1031 IPI_CPU_BACKTRACE               __ipipe_do_IPI
+                         * .1032 IPIPE_CRITICAL_IPI              __ipipe_do_critical_sync
+                         * .1033 IPIPE_HRTIMER_IPI               xnintr_core_clock_handler (not initialized at here)
+                         * .1034 IPIPE_RESCHEDULE_IPI            __xnsched_run_handler (not initialized at here) 
+                         * .1035 IPIPE_SERVICE_VNM               __ipipe_do_vnmi
+                         * .1036 __ipipe_printk_virq             __ipipe_flush_printk        
+                         * .1037 __ipipe_work_virq               __ipipe_do_work
+                         * .1038 cobalt_pipeline.apc_virq        apc_dispatch (at mach_setup)
+                         * .1039 cobalt_pipeline.escalate_virq   __xnsched_run_handler (at mach_setup)
+                         */                                        
+        
+                }                                                
+
+__ipipe_init()
+~~~~~~~~~~~~~~~~~~~
+
+
+handle_IRQ()
+~~~~~~~~~~~~~~~
+
+
+handle_IPI()
+~~~~~~~~~~~~~~~
+
+
+
+
+__ipipe_do_IPI
+
+
+中断描述符
+--------------
+
+irq number和中断描述符进行关联，在内核开启了 ``CONFIG_SPARSE_IRQ`` 选项后所用irq number的中断描述符，都存放在radix tree中，
+通过关键字irq number查找返回对应中断描述符．
+
+当发生中断后，首先获取触发中断的HW interupt ID，然后通过irq domain翻译成irq number，然后通过irq number就可以获取对应的中断描述符。
+调用中断描述符中的 ``handle_irq`` 来进行中断处理就OK了.如下图:
+
+
+.. image:: images/irq-desc.png
+
+
+ 
+
+
+
+
+
+
+
+
+
+frame pointer
+----------------------------------
+关于fp寄存器,我们考虑下面的代码:
+
+
+        .. code-block:: c 
+
+                int hello_word(int a,int b)
+                {
+                        return 0;
+                }
+
+                int main(int argc,char *argv[])
+                {
+                        helloword(1,2);
+                        return 0;
+                }
+ 
+添加了 ``-fomit-frame-pointer`` 编译选项后的反汇编代码为:
+
+
+        .. code-block:: objdump
+
+                00000000 <hello_world>:
+                   0:	e24dd008 	sub	sp, sp, #8
+                   4:	e58d0004 	str	r0, [sp, #4]
+                   8:	e58d1000 	str	r1, [sp]
+                   c:	e3a03000 	mov	r3, #0
+                  10:	e1a00003 	mov	r0, r3
+                  14:	e28dd008 	add	sp, sp, #8
+                  18:	e12fff1e 	bx	lr
+                
+                0000001c <main>:
+                  1c:	e52de004 	push	{lr}		; (str lr, [sp, #-4]!)
+                  20:	e24dd00c 	sub	sp, sp, #12
+                  24:	e58d0004 	str	r0, [sp, #4]
+                  28:	e58d1000 	str	r1, [sp]
+                  2c:	e3a01002 	mov	r1, #2
+                  30:	e3a00001 	mov	r0, #1
+                  34:	ebfffffe 	bl	0 <hello_world>
+                  38:	e3a03000 	mov	r3, #0
+                  3c:	e1a00003 	mov	r0, r3
+                  40:	e28dd00c 	add	sp, sp, #12
+                  44:	e49df004 	pop	{pc}		; (ldr pc, [sp], #4)
+
+ 没有添加 ``-fomit-frame-pointer`` 编译选项的反汇编代码为:
+
+         .. code-block:: objdump
+
+                00000000 <hello_world>:
+                   0:	e52db004 	push	{fp}		; (str fp, [sp, #-4]!)
+                   4:	e28db000 	add	fp, sp, #0
+                   8:	e24dd00c 	sub	sp, sp, #12
+                   c:	e50b0008 	str	r0, [fp, #-8]
+                  10:	e50b100c 	str	r1, [fp, #-12]
+                  14:	e3a03000 	mov	r3, #0
+                  18:	e1a00003 	mov	r0, r3
+                  1c:	e28bd000 	add	sp, fp, #0
+                  20:	e49db004 	pop	{fp}		; (ldr fp, [sp], #4)
+                  24:	e12fff1e 	bx	lr
+                
+                00000028 <main>:
+                  28:	e92d4800 	push	{fp, lr}
+                  2c:	e28db004 	add	fp, sp, #4
+                  30:	e24dd008 	sub	sp, sp, #8
+                  34:	e50b0008 	str	r0, [fp, #-8]
+                  38:	e50b100c 	str	r1, [fp, #-12]
+                  3c:	e3a01002 	mov	r1, #2
+                  40:	e3a00001 	mov	r0, #1
+                  44:	ebfffffe 	bl	0 <hello_world>
+                  48:	e3a03000 	mov	r3, #0
+                  4c:	e1a00003 	mov	r0, r3
+                  50:	e24bd004 	sub	sp, fp, #4
+                  54:	e8bd8800 	pop	{fp, pc}
+ 
+
+我们发现没有添加编译选项 ``-fomit-frame-pointer`` 的反汇编代码做了更多的工作,其堆栈过程如下图:
+
+
+.. image:: images/frame-pointer.png
+
+

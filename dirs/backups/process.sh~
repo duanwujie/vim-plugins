@@ -1,0 +1,13 @@
+
+
+#!/bin/bash
+for i in Stk_5F_1999  Stk_5F_2000  Stk_5F_2001  Stk_5F_2002  Stk_5F_2003 Stk_5F_2004  Stk_5F_2005   Stk_5F_2006  Stk_5F_2007  Stk_5F_2008  Stk_5F_2009  Stk_5F_2010  Stk_5F_2011  Stk_5F_2012  Stk_5F_2013  Stk_5F_2014  Stk_5F_2015  Stk_5F_2016  Stk_5F_2017
+do
+    cd $i
+    rm -fr SH{0,1,2,3,4,5,7,8,9}*.csv
+    rm -fr SZ{1,2,4,5,6,7,8,9}*.csv
+    rename 's/^SH//' *
+    rename 's/^SZ//' *
+    rename 's/\.csv$//' *
+    cd ../
+done

@@ -1,0 +1,10 @@
+
+
+
+
+#ifdef __ASSEMBLY__
+
+#define I_NEED_THIS 0xBEEF
+int foo(int bar);
+
+#endif

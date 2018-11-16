@@ -1,0 +1,14 @@
+
+
+#demo的使用
+
+        make 
+
+        ./client
+
+#certs目录 
+
+        ./helper.sh :使用流程
+
+        ./clean.sh :清楚生成的文件
+

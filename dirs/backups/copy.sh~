@@ -1,0 +1,7 @@
+
+#!/bin/bash
+
+cp -rf policy/_build/html /var/www/
+cp -rf policy/images/int-all.svg /var/www/html/
+
+/etc/init.d/nginx restart

@@ -1,0 +1,16 @@
+
+#include <iostream>
+#include "type.h"
+
+
+using namespace std;
+
+    
+
+
+int main(int argc, char *argv[])
+{
+
+    cout<<integral_constanty<bool,true>::value<<endl;
+
+}

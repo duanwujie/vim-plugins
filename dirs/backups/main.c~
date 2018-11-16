@@ -1,0 +1,12 @@
+
+#include <stdio.h>
+#include <xhook.h>
+
+
+
+int main()
+{
+    xhook_register(".*/libtest\\.so$", "malloc", my_malloc, NULL);
+    xhook_refresh(0);
+    return 0;
+}

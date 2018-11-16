@@ -1,0 +1,17 @@
+%matplotlib inline
+import pandas as pd
+import matplotlib.pyplot as plt
+
+fig, tsax = plt.subplots()
+barax = tsax.twinx()
+
+data = pd.read_csv('1.csv', skipinitialspace=True,index_col='Date')
+data['Trip Miles'].plot(kind='bar', ax=barax)
+barax.set_ylabel('Miles')
+tsax.set_ylabel('Miles/Gallon')
+data['MPG'].plot(ax=tsax)
+data['MPG-D'].plot(ax=tsax)
+
+plt.show()
+
+

@@ -1,0 +1,39 @@
+import csv
+import datetime as dt
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
+years = mdates.YearLocator()   # every year
+months = mdates.MonthLocator()  # every month
+yearsFmt = mdates.DateFormatter('%Y-%m')
+
+
+
+arch = 'figure.csv'
+data = csv.reader(open(arch))
+
+data = [(dt.datetime.strptime(item, "%Y-%m-%d"), float(value)) for item, value in data]
+data.sort()
+[x, y] = zip(*data)
+
+#fig = plt.figure()
+fig = plt.gcf()
+fig.set_size_inches(18.5, 10.5)
+ax = fig.add_subplot(111)
+
+ax.xaxis.set_major_locator(years)
+ax.xaxis.set_major_formatter(yearsFmt)
+#ax.format_xdata = mdates.DateFormatter('%Y-%m')
+ax.format_xdata = mdates.DateFormatter('%Y')
+
+
+plt.tilte('#123',color='#123456')
+ax.plot(x, y)
+
+ax.grid(True)
+fig.autofmt_xdate()
+
+#plt.savefig("test.svg")
+
+fig.savefig('test2png.svg', dpi=600)
+#plt.show()

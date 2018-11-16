@@ -1,0 +1,9 @@
+Package: gmssl
+Priority: extra
+Section: checkinstall
+Installed-Size: 22284
+Maintainer: wjduan@linx-info.com
+Architecture: amd64
+Version: 1.1.10d-1
+Provides: gmssl
+Description: The lib to support sm2/sm3/sm4

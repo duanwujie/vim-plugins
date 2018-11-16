@@ -1,0 +1,45 @@
+unrar -x Stk_5F_1999.rar
+unrar -x Stk_5F_2000.rar
+unrar -x Stk_5F_2001.rar
+unrar -x Stk_5F_2002.rar
+unrar -x Stk_5F_2003.rar
+unrar -x Stk_5F_2004.rar
+unrar -x Stk_5F_2005.rar
+unrar -x Stk_5F_2006.rar
+unrar -x Stk_5F_2007.rar
+unrar -x Stk_5F_2008.rar
+unrar -x Stk_5F_2009.rar
+unrar -x Stk_5F_2010.rar
+unrar -x Stk_5F_2011.rar
+unrar -x Stk_5F_2012.rar
+unrar -x Stk_5F_2013.rar
+unrar -x Stk_5F_2014.rar
+unrar -x Stk_5F_2015.rar
+unrar -x Stk_5F_2016.rar
+unrar -x Stk_5F_201708.rar
+
+
+
+mv Stk_5F_1999
+mv Stk_5F_2000
+mv Stk_5F_2001
+mv Stk_5F_2002
+mv Stk_5F_2003
+mv Stk_5F_2004
+mv Stk_5F_2005
+mv Stk_5F_2006
+mv Stk_5F_2007
+mv Stk_5F_2008
+mv Stk_5F_2009
+mv Stk_5F_2010
+mv Stk_5F_2011
+mv Stk_5F_2012
+mv Stk_5F_2013
+mv Stk_5F_2014
+mv Stk_5F_2015
+mv Stk_5F_2016
+mv Stk_5F_2017
+
+
+
+

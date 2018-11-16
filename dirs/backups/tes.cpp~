@@ -1,0 +1,19 @@
+#include <cstdio>
+
+
+
+#define __ALIGN_MASK(x,mask)(((x)+(mask))&~(mask))      
+
+
+unsigned long get(unsigned long p ,unsigned long align = 1)
+{
+    align -=1;
+    unsigned    long x = (p+align) & ~align;
+    return x;
+}
+
+int main(int argc,char *argv[])
+{
+    printf("%d\n",get(37,4));
+    
+}

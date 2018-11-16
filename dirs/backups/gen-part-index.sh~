@@ -1,0 +1,26 @@
+#!/bin/bash
+
+
+PART=$1
+
+index_head(){
+cat <<EOF > index.rst.in
+Kernel Greek
+===========================
+
+.. toctree::
+   :maxdepth: 3
+   :numbered:
+
+
+EOF
+}
+
+        
+for y in `ls $PART*.rst`
+do
+    echo  "   ${y%%.*}" >> index.rst.in
+done
+
+
+

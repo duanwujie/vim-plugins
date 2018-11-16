@@ -1,0 +1,5 @@
+er=rpcuser
+rpcpassword=rpcpassword
+rpcallowip=127.0.0.1
+rpcport=8332
+server=1

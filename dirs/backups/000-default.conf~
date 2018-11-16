@@ -1,0 +1,23 @@
+
+
+<Directory /usr/local/elixir/http/>
+    Options +ExecCGI
+    AllowOverride None
+    Require all granted
+    SetEnv PYTHONIOENCODING utf-8
+    SetEnv LXR_PROJ_DIR /srv/elixir-data
+</Directory>
+
+AddHandler cgi-script .py
+
+<VirtualHost *:80>
+    ServerName 127.0.0.1
+    DocumentRoot /usr/local/elixir/http
+
+    RewriteEngine on
+    RewriteRule "^/$" "/linux/latest/source" [R]
+    RewriteRule "^/.*/(source|ident|search)" "/web.py" [PT]
+</VirtualHost>
+
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet

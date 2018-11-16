@@ -1,0 +1,2 @@
+java -jar smali.jar assemble $1 -o $2
+

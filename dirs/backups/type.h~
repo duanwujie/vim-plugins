@@ -1,0 +1,11 @@
+#progma once
+
+
+template <typename T T V>
+struct integral_constanty
+{
+    static T const value = V;
+    typedef T value_type;
+    typedef integral_constanty<T,V> type;
+};
+

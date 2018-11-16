@@ -1,0 +1,12 @@
+
+
+
+
+ret_fast_syscall:
+
+.type ret_fast_syscall
+end(ret_fast_syscall)
+
+
+
+__start:

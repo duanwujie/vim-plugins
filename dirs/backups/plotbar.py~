@@ -1,0 +1,25 @@
+
+# Standard import for pandas, numpy and matplot
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.ticker as ticker
+import plotly.graph_objs as go
+
+df = pd.read_csv('barfigure.csv', usecols=['date','profit'], parse_dates=['date'])
+
+
+data = [
+    go.Bar(
+        x=df['date'], # assign x as the dataframe column 'x'
+        y=df['profit']
+    )
+]
+
+# IPython notebook
+# py.iplot(data, filename='pandas-bar-chart')
+
+url = py.plot(data, filename='pandas-bar-chart')
+
+plt.show()

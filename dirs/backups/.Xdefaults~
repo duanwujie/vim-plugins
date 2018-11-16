@@ -1,0 +1,20 @@
+! scrollbar  
+!===============================
+! – Setting for xterm
+! ——————–
+!xterm*faceName:Droid sans fallback:antialias=True:pixelsize=12
+!xterm*faceNameDoublesize:WenQuanYi Zen Hei:antialias=True:pixelsize=12
+!xterm*locale:zh_CN.UTF-8
+
+Ctrl <KeyPress> V: insert-selection(,PRIMARY,CUT_BUFFER0) \n
+Ctrl <KeyPress> P: print()  \n
+
+
+*VT100.font: 9x15 
+*VT100.utf8Fonts.font: -misc-fixed-medium-r-normal--18-120-100-100-c-90-iso10646-1
+
+
+
+!———————-
+!- End of setting Xterm
+!=========================

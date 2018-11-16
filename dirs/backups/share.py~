@@ -1,0 +1,957 @@
+#!/bin/python
+# -*- coding: UTF-8 -*-
+
+import sys
+import struct
+import MySQLdb
+import datetime
+import time
+import numpy as np
+import ConfigParser
+import matplotlib.pyplot as plt
+import os
+from ctypes import c_longlong as ll
+
+
+
+
+
+def get_sql_connect():
+    '''
+        返回数据库链接
+    '''
+    connection = MySQLdb.connect(host="localhost",user="root",passwd="123456",db="stockdb")
+    return connection
+
+def to_unix_timestamp(year,mon,day,hour,mins):
+    '''
+        转换成unix时间戳
+    '''
+    t = (year, mon, day, hour, mins, 0, 0, 0, 0)
+    secs = int(time.mktime(t))
+    return secs
+
+def to_month_timestamp(timestamp):
+    #datetime.datetime.fromtimestamp(open_time).strftime('m-%d %H:%M:%S')
+    mins = datetime.datetime.fromtimestamp(timestamp).strftime('%M')
+    seconds= datetime.datetime.fromtimestamp(timestamp).strftime('%S')
+    hours= datetime.datetime.fromtimestamp(timestamp).strftime('%H')
+    days= datetime.datetime.fromtimestamp(timestamp).strftime('%d')
+    t = timestamp-int(seconds)-int(mins)*60-int(hours)*3600-(int(days)-1)*86400
+    return t
+
+
+
+
+
+
+
+
+
+def get_recently_k5(cursor,real_id,n):
+    cursor.execute("select * from `m5` where id<=%s order by id desc limit %d" %(real_id,n))
+    results = cursor.fetchall()
+    return results;
+
+def get_recently_k15(cursor,real_id,n):
+    cursor.execute("select * from `m15` where id<=%s order by id desc limit %d" %(real_id,n))
+    results = cursor.fetchall()
+    return results;
+
+def get_custom_k(cursor,names,real_id,n):
+    cursor.execute("select * from `%s` where id<=%s order by id desc limit %d" %(names,real_id,n))
+    results = cursor.fetchall()
+    return results;
+
+
+def get_all_codes():
+    '''
+        返回所有的股票代码
+    '''
+
+def get_id(arr):
+    return arr[0]
+
+def get_timestamp(arr):
+    return arr[1]
+
+def get_open_price(arr):
+    '''
+        获得开盘价
+    '''
+    return arr[2]
+def get_close_price(arr):
+    '''
+        获得收盘价
+    '''
+    return arr[3]
+def get_high_price(arr):
+    '''
+        获得最高价
+    '''
+    return arr[4]
+def get_low_price(arr):
+    '''
+        获得最低价
+    '''
+    return arr[5]
+def get_volume(arr):
+    ''' 
+        获得成交量
+    '''
+    return arr[6]
+
+def get_turnover(arr):
+    return arr[7]
+
+def get_ma5(arr):
+    '''
+        获得ma5
+    '''
+    return arr[8]
+def get_ma10(arr):
+    '''
+        获得ma10
+    '''
+    return arr[9]
+def get_ma20(arr):
+    '''
+        获得ma20
+    '''
+    return arr[10]
+
+def get_ma30(arr):
+    '''
+        获得ma30
+    '''
+    return arr[11]
+
+def get_ma60(arr):
+    '''
+        获得ma60
+    '''
+    return arr[12]
+
+def get_va5(arr):
+    return arr[13]
+
+def get_va10(arr):
+    return arr[14]
+
+def get_va20(arr):
+    return arr[15]
+
+
+def get_va30(arr):
+    return arr[16]
+
+def get_va60(arr):
+    return arr[17]
+
+def get_date(arr):
+    return arr[18]
+def get_time(arr):
+    return arr[19]
+
+
+def hhv(arr2,begin,end,type):
+    '''
+        返回特定的最大值
+        type:
+            2:open
+            3:close
+            4:high
+            5:low
+            6:vol
+    '''
+    max = 0
+    for i in range(begin,end+1):
+        if(arr2[i][type]>max):
+            max = arr2[i][type]
+    return max
+
+def llv(arr2,begin,end,type):
+    '''
+        返回特定的最小值
+        type:
+            2:open
+            3:close
+            4:high
+            5:low
+    '''
+    m = sys.maxint
+    for i in range(begin,end+1):
+        if(arr2[i][type]<m):
+            m = arr2[i][type]
+    return m
+
+def sma(vals, n, m) :
+    return reduce(lambda x, y: ((n - m) * x + y * m) / n, vals)
+
+def ema2(vals, n):
+        return sma(vals, n+1, 2)
+
+def ema(datas,pos,n,type):
+    '''
+        计算处于位置pos的ema(type,n)
+    '''
+    list=[]
+    for i in range(pos,pos+n+1):
+        list.append(datas[i][type])
+    e = ema2(list,26)
+    return e
+
+
+
+def pre_signal5(datas):
+    A = 1.0
+    CloseLimit = 3.0
+    MinLimit = 2
+    MaxLimit = 5
+    Fractor = 1.5
+    MorningLimit = 2
+    BuyLimit = 2.5
+    
+
+    #----------------------保证在5分钟K线图上早盘处于横盘区间----------------------
+    tomorrow_close = get_close_price(datas[0])
+    yestoday_close = get_close_price(datas[49])
+    #前3根K线的最高价 
+    h1 = hhv(datas,46,48,4) 
+    #第4跟到第34跟K线的最高价 
+    h2 = hhv(datas,14,45,4) 
+
+    #第1根到第34根K线的最低价
+    l2 = llv(datas,14,48,5)
+    #计算第1根到35根的动量的最大值
+    vol_max = hhv(datas,14,48,6)
+    #第4跟到第35根K线的最高价要小于前3根K线的最高价 
+    if(h2>h1):
+        #早盘不是横盘
+        return 0 
+    if ((h1/yestoday_close-1)*100>=CloseLimit):
+        #早盘波动幅度太大
+        return 0
+    if((h2/l2-1)*100>MorningLimit):
+        #涨幅超过了%2
+        return 0
+    return 1;
+
+
+def signal5(datas,stage):
+    '''
+        5分钟的策略
+        datas:50个数据，而且是倒序的
+    '''
+
+    A = 1.0
+    CloseLimit = 3.0
+    MinLimit = 2
+    MaxLimit = 5
+    Fractor = 1.5
+    MorningLimit = 2
+    BuyLimit = 2.5
+    
+
+    ##----------------------保证在5分钟K线图上早盘处于横盘区间----------------------
+    tomorrow_close = get_close_price(datas[0])
+    yestoday_close = get_close_price(datas[49])
+    ##前3根K线的最高价 
+    h1 = hhv(datas,46,48,4) 
+    ##第4跟到第34跟K线的最高价 
+    #h2 = hhv(datas,14,45,4) 
+
+    ##第1根到第34根K线的最低价
+    #l2 = llv(datas,14,48,5)
+    ##计算第1根到35根的动量的最大值
+    vol_max = hhv(datas,14,48,6)
+    ##第4跟到第35根K线的最高价要小于前3根K线的最高价 
+    #if(h2>h1):
+    #    #早盘不是横盘
+    #    return 0 
+    #if ((h1/yestoday_close-1)*100>=CloseLimit):
+    #    #早盘波动幅度太大
+    #    return 0
+    #if((h2/l2-1)*100>MorningLimit):
+    #    #涨幅超过了%2
+    #    return 0
+
+    i = stage
+    c = get_close_price(datas[i])
+    o = get_open_price(datas[i])
+    ma5 = get_ma5(datas[i])
+    ma10 = get_ma10(datas[i])
+    ma30 = get_ma30(datas[i])
+    rma5 = get_ma5(datas[i+1])
+    rma10 = get_ma10(datas[i+1])
+    rma30 = get_ma30(datas[i+1])
+    va5 = get_va5(datas[i])
+    rva5 = get_va5(datas[i+1])
+    va60 = get_va60(datas[i])
+    vol = get_volume(datas[i])
+
+    #35-46根K线的收盘价大于开盘时的最高价,并且收阳线,且涨幅在2%-%5之间
+    if((c/yestoday_close-1)*100>MaxLimit) or  ((c/yestoday_close-1)*100<MinLimit):  
+        return 0
+
+    #收阳线，突破盘整，均线多头排列，均量多头排列，且成交量大于盘整时成交量的最大值
+    if(c>o and c>h1 and ma5>ma10 and ma5>rma5 and ma10>rma10 and ma30>rma30 and va5>va60 and va5>rva5 and vol>va5 and vol>vol_max):
+        return 1
+    return 0
+
+class NeedContainer:
+    def __init__(self):
+        self.need_code=[]
+        self.need_opened=[]
+        self.need_closed=[]
+        self.need_opentime=[]
+        self.need_closetime=[]
+        self.need_k=[]
+        self.need_range=[]
+
+        self.after_need_code=[]
+        self.after_need_opened=[]
+        self.after_need_closed=[]
+        self.after_need_opentime=[]
+        self.after_need_closetime=[]
+        self.after_need_k=[]
+        
+
+        self.fd = open("results.csv","w")
+    def add(self,cond,code,opened,closed,opentime,closetime):
+        self.need_k.append(cond)
+        self.need_code.append(code)
+        self.need_opened.append(opened)
+        self.need_closed.append(closed)
+        self.need_opentime.append(opentime)
+        self.need_closetime.append(closetime)
+
+    def add_afternoon(self,cond,code,opened,closed,opentime,closetime):
+        self.after_need_k.append(cond)
+        self.after_need_code.append(code)
+        self.after_need_opened.append(opened)
+        self.after_need_closed.append(closed)
+        self.after_need_opentime.append(opentime)
+        self.after_need_closetime.append(closetime)
+ 
+    def add_range(self,k1_range,k2_range,k3_range,kyestoday):
+        self.need_range.append([k1_range,k2_range,k3_range,kyestoday])
+
+    def debug_need(self):
+        i=0
+        while i<self.need_code.__len__():
+            print (self.need_k[i],self.need_code[i],self.need_opened[i],self.need_closed[i],self.need_opentime[i],self.need_closetime[i])
+            i+=1
+    def clear_all_need(self):
+        self.need_code[:] = []
+        self.need_opened[:] = []
+        self.need_closed[:] = []
+        self.need_opentime[:] = []
+        self.need_closetime[:] = []
+        self.need_k[:]=[]
+        self.need_range[:]=[]
+    def clear_all_need_afternoon(self):
+        self.after_need_code[:] = []
+        self.after_need_opened[:] = []
+        self.after_need_closed[:] = []
+        self.after_need_opentime[:] = []
+        self.after_need_closetime[:] = []
+        self.after_need_k[:]=[]
+
+    def get_need_count(self):
+        return self.need_code.__len__()
+
+    def get_need_count_afternoon(self):
+        return self.after_need_code.__len__()
+
+    def buy_average(self,cash):
+        count = self.get_need_count()
+        total_profit = 0;
+        for i in range(0,count):
+            slots = cash/self.need_opened[i]
+            slots = int(int(slots)/100)*100  
+            #计算总的利润
+            total_profit = slots*(self.need_closed[i]-self.need_opened[i])
+            #print (self.need_k[i],self.need_code[i],self.need_opened[i],self.need_closed[i],self.need_opentime[i],self.need_closetime[i],slots,slots*(self.need_closed[i]-self.need_opened[i]))
+            #self.fd.write("%d,%d,%f,%f,%s,%s,%f,%f,%f,%f,%f,%f\n" %(self.need_k[i],self.need_code[i],self.need_opened[i],self.need_closed[i],self.need_opentime[i],self.need_closetime[i],slots,slots*(self.need_closed[i]-self.need_opened[i],self.need_range1[i],self.need_range2[i],self.need_range3[i],self.need_range4[i])))
+            self.fd.write("%d,%d,%f,%f,%s,%s,%f,%f,%f,%f,%f,%f\n" %(self.need_k[i],self.need_code[i],self.need_opened[i],self.need_closed[i],self.need_opentime[i],self.need_closetime[i],slots,slots*(self.need_closed[i]-self.need_opened[i]),self.need_range[i][0],self.need_range[i][1],self.need_range[i][2],self.need_range[i][3]))
+        return total_profit;
+            
+    def buy_average_afternoon(self,cash):
+        count = self.get_need_count_afternoon()
+        total_profit = 0;
+        for i in range(0,count):
+            slots = cash/self.after_need_opened[i]
+            slots = int(int(slots)/100)*100  
+            #计算总的利润
+            total_profit = slots*(self.after_need_closed[i]-self.after_need_opened[i])
+            self.fd.write("%d,%d,%f,%f,%s,%s,%f,%f\n" %(self.after_need_k[i],self.after_need_code[i],self.after_need_opened[i],self.after_need_closed[i],self.after_need_opentime[i],self.after_need_closetime[i],slots,slots*(self.after_need_closed[i]-self.after_need_opened[i])))
+        return total_profit;
+     
+
+def strategy5(connection,config_container,need_container,draw_container,codes,daytime,table_name5):
+    #处理1天的数据
+    profit = 0
+    cursor = connection.cursor()
+
+    tmp_codes=[]
+    for code in codes:
+        real_id = ll(code<<32 | daytime)
+        if(check_time_valid5(cursor,real_id.value)):
+            datas = get_custom_k(cursor,real_id.value,50,table_name5)
+            if(datas.__len__()!=50):
+                continue
+                #数据不对，跳过
+            if pre_signal5(datas) == 1:
+                tmp_codes.append(code)
+
+    for k in (14,13,12,11,10,9,8,7,6,5,4):
+        for code in tmp_codes:
+            #确保数据是有效的
+            real_id = ll(code<<32 | daytime)
+            if(check_time_valid5(cursor,real_id.value)):
+                datas = get_custom_k(cursor,real_id.value,50,table_name5)
+                if signal5(datas,k) ==1 :
+                    opened_price = get_close_price(datas[k])
+                    closed_price = get_close_price(datas[0])
+                    open_time = get_timestamp(datas[k])
+                    close_time = get_timestamp(datas[0])
+                    open_datetime = datetime.datetime.fromtimestamp(open_time).strftime('%Y-%m-%d %H:%M:%S')
+                    close_datetime = datetime.datetime.fromtimestamp(close_time).strftime('%Y-%m-%d %H:%M:%S')
+                    need_container.add_afternoon(k,code,opened_price,closed_price,open_datetime,close_datetime)
+        count = need_container.get_need_count_afternoon()
+        #该根K线有信号
+        if count>0:
+            #首买交易策略
+
+            if config_container.b1_percent>0 and config_container.b1_percent<=100:
+                eachStockCash = config_container.b1_cash/count
+                profit = profit + need_container.buy_average_afternoon(eachStockCash)
+                need_container.clear_all_need_afternoon()
+            #均横交易策略
+            if config_container.b2_percent>0 and config_container.b2_percent<=100:
+                return 0
+            #高频交易策略
+            if config_container.b3_percent>0 and config_container.b3_percent<=100:
+                cash = config_container.get_high_freqency_cash(k)
+                if cash>0:
+                    profit = profit + need_container.buy_average_afternoon(cash/count)
+                    need_container.clear_all_need_afternoon()
+        #该根K线没有信号，但是是需要跟踪的K线
+        else:
+            #如果是该信号，则将该信号的资金分配给其余部分
+            if config_container.is_high_freqency_k(k):
+                cash = config_container.get_high_freqency_cash(k)
+                config_container.set_high_freqency_cash(k,0)
+                config_container.update_high_freqency_cash(cash)
+    cursor.close()
+    return profit
+
+
+
+def signal15(datas,stage,config_container,need_container,draw_container):
+    '''
+        15分钟策略,而且是倒序的
+        datas:18个数据,而且是倒序的
+    '''
+
+    N1 = 3.0
+    N2 = 5.5
+    L1 = 1.5
+    L2 = 1.0
+
+    MARATIO = 2.0
+
+    base_offset = config_container.sell_after*16
+
+    tomorrow_close = get_close_price(datas[0])
+
+    YC = get_close_price(datas[17+base_offset])
+    
+    if YC<=0:
+        return False
+
+    #K1
+    C1 = get_close_price(datas[16+base_offset])
+    O1 = get_open_price(datas[16+base_offset])
+    H1 = get_high_price(datas[16+base_offset])
+    VOL1 = get_volume(datas[16+base_offset])
+    VOL1_MA5 = get_va5(datas[16+base_offset])
+    VOL1_MA60 = get_va60(datas[16+base_offset])
+
+    if C1<O1 or C1<YC or VOL1<VOL1_MA5 or VOL1<VOL1_MA60:
+        #if stage == 13:
+        #    print "%s,%s,%d,%d,%d,%d" %(get_date(datas[16]),get_time(datas[16]),C1<O1,C1<YC,VOL1<VOL1_MA5,VOL1<VOL1_MA60)
+        return False
+
+
+
+    M1_MA5 = get_ma5(datas[16+base_offset])
+    M1_MA10 = get_ma10(datas[16+base_offset])
+    M1_MA30 = get_ma30(datas[16+base_offset])
+    S1 = H1-max(C1,O1)
+    B1 = max(C1,O1) - min(C1,O1)
+
+    #K2
+    C2 = get_close_price(datas[15+base_offset])
+    O2 = get_open_price(datas[15+base_offset])
+    H2 = get_high_price(datas[15+base_offset])
+    S2 = H2-max(C2,O2)
+    B2 = max(C2,O2) - min(C2,O2)
+    VOL2 = get_volume(datas[15+base_offset])
+    VOL2_MA5 = get_va5(datas[15+base_offset])
+    VOL2_MA60 = get_va60(datas[15+base_offset])
+
+    M2_MA5 = get_va5(datas[15+base_offset])
+    M2_MA10 = get_ma10(datas[15+base_offset])
+    M2_MA30 = get_ma20(datas[15+base_offset])
+    RM2_MA5 = get_ma5(datas[16+base_offset])
+    RM2_MA10 = get_ma10(datas[16+base_offset])
+    RM2_MA30 = get_ma30(datas[16+base_offset])
+
+    #K3 - 14
+    C3=get_close_price(datas[14+base_offset])
+    O3=get_open_price(datas[14+base_offset])
+    H3=get_high_price(datas[14+base_offset])
+    S3=H3-max(C3,O3) 	
+    B3=max(C3,O3)-min(C3,O3)
+    VOL3 = get_volume(datas[14+base_offset])
+    VOL3_MA5 = get_va5(datas[14+base_offset])
+    VOL3_MA10 = get_va10(datas[14+base_offset])
+    VOL3_MA60 = get_va60(datas[14+base_offset])
+    M3_MA5 = get_ma5(datas[14+base_offset])
+    M3_MA10 = get_ma10(datas[14+base_offset])
+    M3_MA30 = get_ma30(datas[14+base_offset])
+    RM3_MA5 = get_ma5(datas[15+base_offset]) 
+    RM3_MA10 = get_ma10(datas[15+base_offset])
+    RM3_MA30 = get_ma30(datas[15+base_offset])
+                                             
+    #K4 - 13                                 
+    C4=get_close_price(datas[13+base_offset])
+    O4=get_open_price(datas[13+base_offset]) 
+    H4=get_high_price(datas[13+base_offset]) 
+    S4=H4-max(C4,O4) 	
+    B4=max(C4,O4)-min(C4,O4)
+    VOL4 = get_volume(datas[13+base_offset])
+    VOL4_MA5 = get_va5(datas[13+base_offset])
+    VOL4_MA10 = get_va10(datas[13+base_offset])
+    VOL4_MA60 = get_va60(datas[13+base_offset])
+    M4_MA5 =get_ma5(datas[13+base_offset])
+    M4_MA10 = get_ma10(datas[13+base_offset])
+    M4_MA30 = get_ma30(datas[13+base_offset])
+    RM4_MA5 = get_ma5(datas[14+base_offset])
+    RM4_MA10 = get_ma10(datas[14+base_offset])
+    RM4_MA30 = get_ma30(datas[14+base_offset])
+
+
+    MCOND3= (M3_MA5>M3_MA10) and (M3_MA10 > M3_MA30) and (M3_MA5>RM3_MA5) and (M3_MA10>RM3_MA10) and (M3_MA30>RM3_MA30)
+    MCOND4= (M4_MA5>M4_MA10) and (M4_MA10 > M4_MA30) and (M4_MA5>RM2_MA5) and (M4_MA10>RM4_MA10) and (M4_MA30>RM4_MA30)
+    #VCOND1= (VOL1>VOL1_MA5) and (VOL1 > VOL1_MA60) 
+    VCOND2= (VOL2>VOL2_MA5) and (VOL2 > VOL2_MA60)
+    VCOND3= (VOL3>VOL3_MA5) and (VOL3 > VOL3_MA60)
+    VCOND4= (VOL4>VOL4_MA5) and (VOL4 > VOL4_MA60)
+
+    #PCOND0= VCOND1 and (C1>O1) and (C1 > YC)
+    PCOND1= VCOND2 and (C2>O2) and ((C2>C1 and H2>=H1) or (C2==C1 and H2>H1))
+    PCOND2= VCOND3 and (C3>O3) and ((C3>C1 and H3>=H1) or (C3==C1 and H3>H1))
+    PCOND3= VCOND3 and (C3>O3) and ((C3>C2 and H3>=H2) or (C3==C2 and H3>H2)) and (S3*L1<B3) and (VOL3_MA5>VOL3_MA10) and (C3*100/YC-100)>N1 and (C3*100/YC-100)<N2 and MCOND3 and (VOL3<L2*(VOL1+VOL2)) and VOL3>VOL1 and VOL3>VOL2
+    PCOND4= VCOND4 and (C4>O4) and ((C4>C2 and H4>=H2) or (C4==C2 and H4>H2)) and (S4*L1<B4) and (VOL4_MA5>VOL4_MA10) and (C4*100/YC-100)>N1 and (C4*100/YC-100)<N2 and MCOND4 and (VOL4<L2*(VOL1+VOL2)) and  VOL4>VOL1 and VOL4>VOL2
+    PCOND5= VCOND4 and (C4>O4) and ((C4>C3 and H4>=H3) or (C4==C3 and H4>H3)) and (S4*L1<B4) and (VOL4_MA5>VOL4_MA10) and (C4*100/YC-100)>N1 and (C4*100/YC-100)<N2 and MCOND4 and (VOL4<L2*(VOL1+VOL3)) and VOL4>VOL1 and VOL4>VOL3 
+
+    #K123
+    if stage == 14:
+        #print "%s %s 123:%d,%d,%d,%d,%d,%d,%d,%d" %(get_date(datas[16]),get_time(datas[16]),PCOND1 , PCOND3,VCOND3,(S3*L1<B3),(VOL3_MA5>VOL3_MA10),(C3*100/YC-100)>N1,(C3*100/YC-100)<N2,MCOND3)
+        #print "%s %s 124:%d,%d,%d,%d,%d,%d,%d,%d" %(get_date(datas[16]),get_time(datas[16]),PCOND1 , PCOND4,VCOND4,(S4*L1<B4),(VOL4_MA5>VOL4_MA10),(C4*100/YC-100)>N1,(C3*100/YC-100)<N2,MCOND4)
+        #print "%s %s 134:%d,%d,%d,%d,%d,%d,%d,%d" %(get_date(datas[16]),get_time(datas[16]),PCOND2 , PCOND5,VCOND4,(S4*L1<B4),(VOL4_MA5>VOL4_MA10),(C4*100/YC-100)>N1,(C3*100/YC-100)<N2,MCOND4)
+        #print "C3:%f,YC:%f" %(C3,YC)
+        #print (M3_MA5,M3_MA10,M3_MA30,RM3_MA5,RM3_MA10,RM3_MA30)
+        #if PCOND1 and PCOND3:
+        #    print "%s  C3:%f,YC:%f,C4:%f" %(get_date(datas[16+base_offset]),C3,YC,C4)
+
+        buy_cond = (PCOND1 and PCOND3 and ((M3_MA5-M3_MA10)*MARATIO>(M3_MA10-M3_MA30)))
+        if buy_cond:
+            #123 range
+            range1 = (C1/YC)-1
+            range2 = (C2/C1)-1
+            range3 = (C3/C2)-1
+            range4 = (C3/YC)-1
+            need_container.add_range(range1,range2,range3,range4)
+        return buy_cond
+    #K124 K134
+    if stage == 13:
+        buy_cond1 = (PCOND1 and PCOND4 and ((M4_MA5-M4_MA10)*MARATIO>(M4_MA10-M4_MA30))) 
+        if buy_cond1:
+            #124 range
+            range1 = (C1/YC)-1
+            range2 = (C2/C1)-1
+            range3 = (C4/C3)-1
+            range4 = (C4/YC)-1
+            need_container.add_range(range1,range2,range3,range4)
+            return buy_cond1
+        buy_cond2 = (PCOND2 and PCOND5 and ((M4_MA5-M4_MA10)*MARATIO>(M4_MA10-M4_MA30)))
+        if buy_cond2:
+            #134 range
+            range1 = (C1/YC)-1
+            range2 = (C3/C2)-1
+            range3 = (C4/C3)-1
+            range4 = (C4/YC)-1
+            need_container.add_range(range1,range2,range3,range4)
+            return buy_cond2
+        return (buy_cond1 or buy_cond2)
+
+
+
+def strategym15(connection,config_container,need_contianer,draw_container,codes,daytime,names):
+    '''
+        15分钟策略
+    '''
+    cursor = connection.cursor()
+    today_profit = 0;
+    today_s1_profit = 0;
+    today_s2_profit = 0;
+
+    data_count = 18+config_container.sell_after*16
+    base_offset = config_container.sell_after*16
+    for k in (14,13):
+        for code in codes:
+            real_id =ll(code<<32|daytime)
+            datas = get_custom_k(cursor,names,real_id.value,data_count)
+            #if k==13 :
+            #    debug_datas(datas,code)
+            if check_time_valid15(datas,data_count,daytime) == False:
+                #debug_datas(datas,code)
+                #print "real id:%d, %d" %(real_id.value,code)
+                #print "data error:%d" %(datas.__len__())
+                continue
+            if signal15(datas,k,config_container,need_container,draw_container) == True:
+                #debug_datas(datas,code)
+                opened_price = get_close_price(datas[k+base_offset])
+                closed_price = get_open_price(datas[0])
+                open_time = get_timestamp(datas[k+base_offset])
+                close_time = get_timestamp(datas[0])
+                open_datetime = datetime.datetime.fromtimestamp(open_time).strftime('%Y-%m-%d %H:%M:%S')
+                close_datetime = datetime.datetime.fromtimestamp(close_time).strftime('%Y-%m-%d %H:%M:%S')
+                need_container.add(k,code,opened_price,closed_price,open_datetime,close_datetime)
+        # 123 condition,10半的开盘价，第二天第一15分的收盘价格
+        if k==14 and config_container.a123_percent>0:
+            if need_container.get_need_count()>0:
+                eachStockCash = config_container.a123_cash/need_contianer.get_need_count()
+                today_s1_profit = need_container.buy_average(eachStockCash)
+                need_contianer.clear_all_need()
+        #124 and 134 condition
+        if k==13 and (config_container.a124_percent + config_container.a134_percent)>0:
+            if need_container.get_need_count()>0:
+                eachStockCash = (config_container.a124_cash + config_container.a134_cash)/need_contianer.get_need_count()
+                today_s2_profit = need_container.buy_average(eachStockCash)
+                need_container.clear_all_need()
+    #这里还是要清空的
+    need_container.clear_all_need()
+    today_profit = today_s1_profit + today_s2_profit;
+    cursor.close()
+    return today_profit
+
+
+def check_time_valid5(cursor,real_id):
+    cursor.execute("select * from `m5` where id=%s" %(real_id))
+    results = cursor.fetchall()
+    return results.__len__()
+
+
+def check_time_valid15(datas,data_count,daytime):
+    '''
+        当一个股票数据不够时，可能获取其他股票的数据，这里需要保证是同一只股票
+        这里是由于数据分表造成的bug
+    '''
+    if datas.__len__()!=data_count or daytime!=get_timestamp(datas[0]):
+        return False
+    id1=ll(get_id(datas[0]))
+    id2=ll(get_id(datas[1]))
+    code1=int(id1.value>>32)
+    code2=int(id2.value>>32)
+    if code1!=code2 :
+        return False
+    return True
+
+
+def readconfig_file():
+    '''
+        读取配置文件
+    '''
+def history_strategy(config_container,need_contianer,draw_container,list_container,table_name15,table_name5):
+    '''
+        历史交易量策略
+    '''
+    connection = get_sql_connect()
+    if connection == None :
+        print 'Connect mysql server failed'
+        return None
+
+    begin_year = config_container.begin_year
+    begin_month  = config_container.begin_month
+    begin_day = config_container.begin_day
+    end_year = config_container.end_year
+    end_month = config_container.end_month
+    end_day = config_container.end_day
+
+    #print "%d-%d-%d  %d-%d-%d" %(begin_year,begin_month,begin_day,end_year,end_month,end_day)
+    trading_timebegin5 = to_unix_timestamp(begin_year,begin_month,begin_day,9,35)
+    trading_timeend5 = to_unix_timestamp(end_year,end_month,end_day,9,35)
+    trading_timebegin15 = to_unix_timestamp(begin_year,begin_month,begin_day,9,45)
+    trading_timeend15 = to_unix_timestamp(end_year,end_month,end_day,9,45)
+    process_time5 =  trading_timebegin5
+    process_time15 = trading_timebegin15
+    b_percent = config_container.b1_percent + config_container.b2_percent+config_container.b3_percent
+    while (process_time5<=trading_timeend5):
+        process_datetime = datetime.datetime.fromtimestamp(process_time5).strftime('%Y-%m-%d')
+        #dwj
+        print (process_datetime,table_name15,process_time15)
+        profit_m5 = 0
+        profit_m15 = 0
+        if config_container.get_assert()<0:
+            print "资产输光了"
+            return -1
+        if b_percent>0:
+            #5分钟交易策略
+            profit_m5 = strategy5(connection,config_container,need_contianer,draw_container,list_container.codes,process_time5,table_name5)
+
+        if config_container.a1_percent>0:
+            #15分钟交易策略
+            profit_m15 = strategym15(connection,config_container,need_container,draw_container,list_container.codes,process_time15,table_name15)
+        #更新可用的资产
+        config_container.update(profit_m15+profit_m5)
+        #更新画图数据
+        draw_container.add_profit(process_time15,config_container.get_assert())
+        draw_container.add_month_profit(process_time15,profit_m5+profit_m15)
+        process_time5+=86400
+        process_time15+=86400
+    return 0
+
+
+class ConfigContainer:
+    def __init__(self):
+        self.config = ConfigParser.ConfigParser()
+        self.path = os.path.split(os.path.realpath(__file__))[0] + '/strategy.conf'
+        self.config.read(self.path)
+        self.a1_percent = int(self.get('st','a1_percent'))
+        self.b1_percent = int(self.get('st','b1_percent'))
+        self.b2_percent = int(self.get('st','b2_percent'))
+        self.b3_percent = int(self.get('st','b3_percent'))
+        if (self.a1_percent + self.b1_percent+self.b2_percent+self.b3_percent)>100:
+            print "资金分配策略大于100%,请检查资金分配策略!"
+            exit(-1)
+        self.a123_percent = int(self.get('st','a123_percent'))
+        self.a124_percent = int(self.get('st','a124_percent'))
+        self.a134_percent = int(self.get('st','a134_percent'))
+        self.total_assert = float(self.get('st','total_assert'))
+        self.open_rate = float(self.get('st','open_rate'))
+        self.strategy_name = self.get('st','name')
+        self.a1_cash = self.total_assert*self.a1_percent/100.0
+        self.b1_cash = self.total_assert*self.b1_percent/100.0
+        self.b2_cash = self.total_assert*self.b2_percent/100.0
+        self.b3_cash = self.total_assert*self.b3_percent/100.0
+        self.a123_cash = self.a1_cash * self.a123_percent/100.0
+        self.a124_cash = self.a1_cash * self.a124_percent/100.0
+        self.a134_cash = self.a1_cash * self.a134_percent/100.0
+        #read the test date range
+        self.begin_year =int(self.get('st','begin_year'))
+        self.begin_month =int(self.get('st','begin_month'))
+        self.begin_day =int(self.get('st','begin_day'))
+        self.end_year =int(self.get('st','end_year'))
+        self.end_month =int(self.get('st','end_month'))
+        self.end_day =int(self.get('st','end_day'))
+        self.sell_after =int(self.get('st','sell_after'))
+
+        self.high_freqency_bars = int(self.get('st','high_freqency_bars'))
+        self.kbars={}
+        self.kpersent={}
+        self.kcash={}
+        if self.high_freqency_bars>10:
+            print "高频Bar购买个数太多了!"
+            exit(0)
+        i = 1
+        while i<=self.high_freqency_bars:
+            knames = 'high_freqency_k'+str(i)
+            kpnames = 'high_freqency_p'+str(i)
+            ksignal = int(self.get('st',knames))
+            ksignal = 48-ksignal+1
+            kpersent = int(self.get('st',kpnames))
+            self.kbars[ksignal]=ksignal
+            self.kpersent[ksignal]=kpersent
+            #self.kpersent.append(kpersent)
+            cash = kpersent*self.b3_cash/100
+            self.kcash[ksignal]=cash
+            i = i+1
+
+    def get(self,section, key): 
+        return self.config.get(section, key)
+    def set(self,section,key,value):
+        self.config.set(section,key,value)
+    def sync_assert(self,new_assert):
+        self.total_assert = float(self.get('st','total_assert'))
+    def update_assert(self):
+        self.total_assert = float(self.get('st','total_assert'))
+
+    def update(self,profit):
+        '''
+            每天一次更新:完成交易后跟新策略可用的现金
+        '''
+        self.total_assert = self.total_assert+profit;
+        self.a1_cash = self.total_assert*self.a1_percent/100.0
+        self.b1_cash = self.total_assert*self.b1_percent/100.0
+        self.b2_cash = self.total_assert*self.b2_percent/100.0
+        self.b3_cash = self.total_assert*self.b3_percent/100.0
+        self.a123_cash = self.a1_cash * self.a123_percent/100.0
+        self.a124_cash = self.a1_cash * self.a124_percent/100.0
+        self.a134_cash = self.a1_cash * self.a134_percent/100.0
+
+        for i in self.kcash:
+            self.kcash[i] = self.kpersent[i]*self.b3_cash/100.0
+
+        
+    def get_assert(self):
+        return self.total_assert
+    def get_high_freqency_percent(self,index):
+        '''
+            获取对应K线的资金百分比
+        '''
+        for i in range(0,self.kbars.__len__()):
+            if self.kbars[i]==index:
+                return self.kpersent[i]
+        return 0
+    def get_high_freqency_cash(self,key):
+        if self.kcash.has_key(key):
+            return self.kcash[key]
+        return 0
+    def set_high_freqency_cash(self,key,cash):
+        self.kcash[key] = cash
+    def get_high_count_which_have_cash(self):
+        j = 0
+        for i in self.kcash:
+            if i>0:
+                j=j+1
+        return j
+
+    def update_high_freqency_cash(self,cash):
+        if self.get_high_count_which_have_cash()>0:
+            percash = 1.0*cash/self.get_high_count_which_have_cash()
+            for i in self.kcash:
+                if self.kcash[i]>0:
+                    self.kcash[i]=self.kcash[i]+percash
+    def is_high_freqency_k(self,key):
+        if self.kbars.has_key(key):
+            return True
+        return False
+ 
+
+class DrawContainer:
+    def __init__(self):
+        self.total_assert = 0
+        self.date_list=[]
+        self.assert_list=[]
+        self.month_profit_list={}
+        self.fd = open('figure.csv', 'w')
+        self.bar_fd=open('barfigure.csv','w')
+        self.last_month = 0
+    def add_profit(self,dt,asst):
+        self.fd.write("%s,%f\n" %(self.get_date(dt),asst))
+    def add_month_profit(self,key,profit):
+        real_key=to_month_timestamp(key)
+        if self.month_profit_list.has_key(real_key):
+            self.month_profit_list[real_key] = self.month_profit_list[real_key] + profit
+        else:
+            if self.last_month>0 and self.last_month!=real_key:
+                self.bar_fd.write("%s,%f\n" %(self.get_date(self.last_month),self.month_profit_list[self.last_month]))
+            self.month_profit_list[real_key] = profit
+            self.last_month = real_key
+
+        
+    def clear(self):
+        self.date_list[:]=[]
+        self.assert_list[:]=[]
+    def outline(self):
+        for key in self.month_profit_list:
+            self.bar_fd.write("%s,%f\n" %(self.get_date(key),self.month_profit_list[key]))
+
+    def get_date(self,t):
+        return datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d')
+
+
+
+class ListContainer:
+    def __init__(self):
+        self.codes=[]
+        with open('m5.list') as f:
+            self.codes = [int(x) for x in f.read().splitlines()]
+        #for code in self.codes:
+        #    print code
+        if self.codes.__len__()==0:
+            print "Error code list"
+
+def bug_test(code,t):
+    connection = get_sql_connect()
+    cursor = connection.cursor()
+    read_id =ll(code<<32 | t)
+    print read_id.value
+    datas = get_custom_k(cursor,'m15_2007',read_id.value,18)
+
+    check_time_valid15(datas,18,t)
+    for i in datas:
+        print "%d %s %s,%d" %(get_id(i),get_date(i),get_time(i),get_timestamp(i))
+    cursor.close()
+    exit(0)
+    
+
+# 确认K的收盘价,开仓前一日的收盘，Fibo 50,1500
+
+#Make sure data is right
+if __name__ == '__main__':
+    start = time.time()
+
+    #bug_test(948,1167875100)
+
+    to_month_timestamp(start)
+    config_container = ConfigContainer()
+    need_container = NeedContainer()
+    draw_container = DrawContainer()
+    list_container = ListContainer()
+    #print sys.argv[1]
+
+    test_begin_year = config_container.begin_year
+    test_begin_month = config_container.begin_month
+    test_begin_day = config_container.begin_day
+
+    test_end_year = config_container.end_year
+    test_end_month = config_container.end_month
+    test_end_day = config_container.end_day
+
+    for i in range(test_begin_year,test_end_year+1):
+        table_name15="m15_"+str(i)
+        table_name5="m5_"+str(i)
+        config_container.begin_year = i
+        config_container.end_year = i
+        #last year
+        if i==test_begin_year:
+            config_container.begin_month = test_begin_month
+            config_container.begin_day = test_begin_day
+            if i<test_end_year:
+                config_container.end_month = 12
+                config_container.end_day = 31
+        elif i==test_end_year:
+            config_container.end_month = test_end_month
+            config_container.end_day = test_end_day
+            if i==test_begin_year:
+                config_container.begin_month = test_begin_month
+                config_container.begin_day = test_begin_day
+            else:
+                config_container.begin_month = 1
+                config_container.begin_day = 1
+        else:
+            config_container.begin_month = 1
+            config_container.begin_day =1
+            config_container.end_month = 12
+            config_container.end_day = 31
+        history_strategy(config_container,need_container,draw_container,list_container,table_name15,table_name5)
+    end = time.time()
+    #print "Total assert: %f" % (config_container.get_assert())
+    #draw_container.outline()
+    #print (end-start)

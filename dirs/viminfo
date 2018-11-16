@@ -1,0 +1,1194 @@
+# 这个 viminfo 文件是由 Vim 8.0 所产生。
+# 如果想要自行修改请特别小心！
+
+# Viminfo version
+|1,4
+
+# 文件被写的时候 ‘encoding’ 的值
+*encoding=utf-8
+
+
+# hlsearch on (H) or off (h):
+~h
+# 上个 Search 图案：
+~MSle0~/filetype
+
+# 上个 替换 Search 图案：
+~MSle0&^
+
+# 最后替换的字符串
+$
+
+# 命令行 历史记录 (从新到旧)：
+:x
+|2,0,1542389426,,"x"
+:q!
+|2,0,1542389275,,"q!"
+:set filetype?
+|2,0,1542387740,,"set filetype?"
+:set runtimepath?
+|2,0,1542387616,,"set runtimepath?"
+:x\
+|2,0,1542387361,,"x\\"
+:w
+|2,0,1542387189,,"w"
+:PlugInstall
+|2,0,1542386119,,"PlugInstall"
+:xa
+|2,0,1542386470,,"xa"
+:Plug 
+|2,0,1542385402,,"Plug "
+:q
+|2,0,1542385331,,"q"
+:PlugIn
+|2,0,1542384292,,"PlugIn"
+:q１
+|2,0,1542384081,,"q１"
+:filetype plugin on
+|2,0,1542383333,,"filetype plugin on"
+:vsp test.cpp
+|2,0,1542382802,,"vsp test.cpp"
+:/x
+|2,0,1542382664,,"/x"
+:q1
+|2,0,1541458259,,"q1"
+:q~
+|2,0,1541266313,,"q~"
+:.q!
+|2,0,1541264611,,".q!"
+:set nu
+|2,0,1541262619,,"set nu"
+:set nonu
+|2,0,1541257928,,"set nonu"
+:jjjjjjjjjjjj
+|2,0,1535859598,,"jjjjjjjjjjjj"
+:!
+|2,0,1534777880,,"!"
+:%s/-gnueabi-/-eabi-/g
+|2,0,1534703900,,"%s/-gnueabi-/-eabi-/g"
+:%s/-gnueabi-/-/g
+|2,0,1534703862,,"%s/-gnueabi-/-/g"
+:%s/arm-linux-gnueabi/arm-none-gnueabi/g
+|2,0,1534703823,,"%s/arm-linux-gnueabi/arm-none-gnueabi/g"
+:%s/\/home\/duanwujie\/android\/openssl\/toolchain\/bin\/arm-linux-androideabi/arm-linux-gnueabi-gcc/g
+|2,0,1534703535,,"%s/\\/home\\/duanwujie\\/android\\/openssl\\/toolchain\\/bin\\/arm-linux-androideabi/arm-linux-gnueabi-gcc/g"
+:%s/
+|2,0,1534703501,,"%s/"
+:%s/^OPENSSL_1_1_0//g
+|2,0,1534699457,,"%s/^OPENSSL_1_1_0//g"
+:%s/^OPENSSL_1_1_1//g
+|2,0,1534699420,,"%s/^OPENSSL_1_1_1//g"
+:%s/^LIBC//g
+|2,0,1534698938,,"%s/^LIBC//g"
+:%s/^OPENSSL_1_1_0i//g
+|2,0,1534698902,,"%s/^OPENSSL_1_1_0i//g"
+:%s/^OPENSSL_1_1_0h//g
+|2,0,1534698896,,"%s/^OPENSSL_1_1_0h//g"
+:%s/^OPENSSL_1_1_0g//g
+|2,0,1534698892,,"%s/^OPENSSL_1_1_0g//g"
+:%s/^OPENSSL_1_1_0f//g
+|2,0,1534698888,,"%s/^OPENSSL_1_1_0f//g"
+:%s/^OPENSSL_1_1_0e//g
+|2,0,1534698881,,"%s/^OPENSSL_1_1_0e//g"
+:%s/^OPENSSL_1_1_0d//g
+|2,0,1534698870,,"%s/^OPENSSL_1_1_0d//g"
+:%s/^OPENSSL_1_1_0c//g
+|2,0,1534698865,,"%s/^OPENSSL_1_1_0c//g"
+:%s/^OPENSSL_1_1_0b//g
+|2,0,1534698858,,"%s/^OPENSSL_1_1_0b//g"
+:%/s
+|2,0,1534698853,,"%/s"
+:%s/^OPENSSL_1_1_0a//g
+|2,0,1534698845,,"%s/^OPENSSL_1_1_0a//g"
+:nu
+|2,0,1534698757,,"nu"
+:%s/ \\//g
+|2,0,1534697228,,"%s/ \\\\//g"
+:%s
+|2,0,1534697169,,"%s"
+:%s/ \\/g
+|2,0,1534697146,,"%s/ \\\\/g"
+:%s/$/ \\/g
+|2,0,1534696935,,"%s/$/ \\\\/g"
+:xu
+|2,0,1534692513,,"xu"
+:q！
+|2,0,1534688904,,"q！"
+:fiel
+|2,0,1534673296,,"fiel"
+:%s/sudo//g
+|2,0,1533954994,,"%s/sudo//g"
+:%s/--------------------------------
+|2,0,1530016627,,"%s/--------------------------------"
+
+# 查找字符串 历史记录 (从新到旧)：
+?/filetype
+|2,1,1542387441,47,"filetype"
+? ^
+|2,1,1542387125,,"^"
+?/Doxy
+|2,1,1542386344,47,"Doxy"
+?/jedi
+|2,1,1542385578,47,"jedi"
+?/Plug
+|2,1,1542383853,47,"Plug"
+?/type
+|2,1,1542383138,47,"type"
+?/dddd
+|2,1,1542382670,47,"dddd"
+??dddd
+|2,1,1542382667,63,"dddd"
+? x
+|2,1,1542382664,,"x"
+?/\[1\]_
+|2,1,1542295178,47,"\\[1\\]_"
+?/\[1\]
+|2,1,1542295144,47,"\\[1\\]"
+?/[1]
+|2,1,1542295133,47,"[1]"
+?/.. [
+|2,1,1542295126,47,".. ["
+?/Hack
+|2,1,1542290798,47,"Hack"
+?/INTERFACE
+|2,1,1541277719,47,"INTERFACE"
+?/IMPLEMENTATION:
+|2,1,1541277691,47,"IMPLEMENTATION:"
+?/IN
+|2,1,1541277655,47,"IN"
+?/INPLEMTN
+|2,1,1541277651,47,"INPLEMTN"
+?/bootstrap
+|2,1,1541268203,47,"bootstrap"
+?/index.rst
+|2,1,1540769716,47,"index.rst"
+?/index.
+|2,1,1540769656,47,"index."
+?/index.rst.in
+|2,1,1540769649,47,"index.rst.in"
+?/PACKAGE
+|2,1,1540769491,47,"PACKAGE"
+?/change
+|2,1,1540769486,47,"change"
+?/changelog
+|2,1,1540768187,47,"changelog"
+?/changlog
+|2,1,1540768184,47,"changlog"
+?/debian
+|2,1,1540768120,47,"debian"
+?/logo.png
+|2,1,1540767659,47,"logo.png"
+?/clone.bundle
+|2,1,1539396503,47,"clone.bundle"
+?/googlesource.com
+|2,1,1539396469,47,"googlesource.com"
+?/goo
+|2,1,1539396451,47,"goo"
+?/version
+|2,1,1539363966,47,"version"
+?/command
+|2,1,1539363957,47,"command"
+?/versionNNN/
+|2,1,1539363949,47,"versionNNN/"
+?/Version
+|2,1,1539363938,47,"Version"
+?/v
+|2,1,1539363933,47,"v"
+?/Versi
+|2,1,1539363912,47,"Versi"
+?/VERSION
+|2,1,1539363883,47,"VERSION"
+?/Make
+|2,1,1539359591,47,"Make"
+?/sed
+|2,1,1538935387,47,"sed"
+?/prebuil
+|2,1,1538935410,47,"prebuil"
+?/init(
+|2,1,1534954556,47,"init("
+?/->init
+|2,1,1534953007,47,"->init"
+?/new
+|2,1,1534946629,47,"new"
+?/initW
+|2,1,1534776718,47,"initW"
+?/mand
+|2,1,1534720426,47,"mand"
+?/CC
+|2,1,1534719923,47,"CC"
+?/AR
+|2,1,1534719833,47,"AR"
+?/cc
+|2,1,1534719786,47,"cc"
+?/-man
+|2,1,1534703910,47,"-man"
+
+# 表达式 历史记录 (从新到旧)：
+
+# 输入行 历史记录 (从新到旧)：
+
+# Debug Line 历史记录 (从新到旧)：
+
+# 寄存器:
+"0	LINE	0
+	filetype plugin on
+|3,0,0,1,1,0,1542387443,"filetype plugin on"
+"1	LINE	0
+	
+|3,0,1,1,1,0,1542387298,""
+"2	LINE	0
+	asdasfdasfdasdfsfa
+|3,0,2,1,1,0,1542387286,"asdasfdasfdasdfsfa"
+"3	LINE	0
+	aasdfasf
+|3,0,3,1,1,0,1542387211,"aasdfasf"
+"4	LINE	0
+	filetype plugin on
+|3,0,4,1,1,0,1542387162,"filetype plugin on"
+"5	LINE	0
+	filetype plugin indent on 
+|3,0,5,1,1,0,1542387162,"filetype plugin indent on "
+"6	LINE	0
+	
+|3,0,6,1,1,0,1542387125,""
+"7	LINE	0
+	
+|3,0,7,1,1,0,1542387125,""
+"8	LINE	0
+	Search	links to
+|3,0,8,1,1,0,1542387125,"Search	links to"
+"9	LINE	0
+	NonText	links to
+|3,0,9,1,1,0,1542387125,"NonText	links to"
+"z	LINE	0
+	File:/home/duanwujie/NERD_tree_1
+	
+|3,0,35,1,2,0,1542389194,"File:/home/duanwujie/NERD_tree_1",""
+""-	CHAR	0
+	"
+|3,1,36,0,1,0,1542387709,"\""
+
+# 文件标记:
+'0  1  0  ~/book/l4/cpp/test.cpp
+|4,48,1,0,1542389426,"~/book/l4/cpp/test.cpp"
+'1  16  0  ~/book/l4/cpp/test.cpp
+|4,49,16,0,1542389374,"~/book/l4/cpp/test.cpp"
+'2  16  0  ~/book/l4/cpp/test.cpp
+|4,50,16,0,1542389374,"~/book/l4/cpp/test.cpp"
+'3  1  0  ~/book/l4/cpp/test.cpp
+|4,51,1,0,1542389228,"~/book/l4/cpp/test.cpp"
+'4  1  0  ~/book/l4/cpp/test.cpp
+|4,52,1,0,1542389228,"~/book/l4/cpp/test.cpp"
+'5  1  0  ~/book/l4/cpp/test.cpp
+|4,53,1,0,1542389228,"~/book/l4/cpp/test.cpp"
+'6  4  1  ~/NERD_tree_1
+|4,54,4,1,1542389202,"~/NERD_tree_1"
+'7  1  0  ~/book/l4/cpp/test.cpp
+|4,55,1,0,1542387744,"~/book/l4/cpp/test.cpp"
+'8  1  0  ~/book/l4/cpp/test.cpp
+|4,56,1,0,1542387744,"~/book/l4/cpp/test.cpp"
+'9  1  0  ~/book/l4/cpp/test.cpp
+|4,57,1,0,1542387744,"~/book/l4/cpp/test.cpp"
+
+# 跳转列表 (从新到旧):
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542389426,"~/book/l4/cpp/test.cpp"
+-'  16  0  ~/book/l4/cpp/test.cpp
+|4,39,16,0,1542389374,"~/book/l4/cpp/test.cpp"
+-'  16  0  ~/book/l4/cpp/test.cpp
+|4,39,16,0,1542389374,"~/book/l4/cpp/test.cpp"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542389372,"~/book/l4/cpp/test.cpp"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542389228,"~/book/l4/cpp/test.cpp"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542389228,"~/book/l4/cpp/test.cpp"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  4  1  ~/NERD_tree_1
+|4,39,4,1,1542389202,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  5  0  ~/NERD_tree_1
+|4,39,5,0,1542389201,"~/NERD_tree_1"
+-'  1  1  ~/NERD_tree_1
+|4,39,1,1,1542389201,"~/NERD_tree_1"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/test
+|4,39,1,0,1542389192,"~/test"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542387744,"~/book/l4/cpp/test.cpp"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542387744,"~/book/l4/cpp/test.cpp"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542387744,"~/book/l4/cpp/test.cpp"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542387744,"~/book/l4/cpp/test.cpp"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542387713,"~/book/l4/cpp/test.cpp"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542387713,"~/book/l4/cpp/test.cpp"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542387713,"~/book/l4/cpp/test.cpp"
+-'  1  0  ~/book/l4/cpp/test.cpp
+|4,39,1,0,1542387713,"~/book/l4/cpp/test.cpp"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+-'  498  0  ~/.gvimrc
+|4,39,498,0,1542387710,"~/.gvimrc"
+
+# 文件内的标记历史记录 (从新到旧):
+
+> ~/book/l4/cpp/test.cpp
+	*	1542389425	0
+	"	1	0
+	^	14	53
+	.	2	0
+	+	9	9
+	+	9	13
+	+	9	8
+	+	8	4
+	+	9	0
+	+	11	31
+	+	12	1
+	+	16	0
+	+	13	0
+	+	2	18
+	+	6	19
+	+	13	40
+	+	9	0
+	+	9	5
+	+	13	5
+	+	13	23
+	+	13	11
+	+	13	10
+	+	13	0
+	+	13	35
+	+	13	0
+	+	13	11
+	+	13	0
+	+	9	24
+	+	13	7
+	+	3	16
+	+	9	0
+	+	13	0
+	+	15	0
+	+	14	52
+	+	2	0
+
+> ~/NERD_tree_1
+	*	1542389201	0
+	"	4	1
+	.	1	0
+	+	1	0
+
+> ~/test
+	*	1542389198	0
+	"	1	0
+
+> ~/__Tagbar__.1
+	*	1542389196	0
+	"	1	0
+
+> ~/.gvimrc
+	*	1542387709	0
+	"	498	0
+	^	500	9
+	.	498	0
+	+	489	25
+	+	491	18
+	+	13	31
+	+	491	23
+	+	491	0
+	+	13	31
+	+	45	0
+	+	45	21
+	+	45	0
+	+	45	22
+	+	45	0
+	+	44	0
+	+	39	0
+	+	490	0
+	+	491	0
+	+	482	0
+	+	491	0
+	+	39	57
+	+	492	0
+	+	493	0
+	+	495	0
+	+	494	0
+	+	495	0
+	+	39	0
+	+	43	16
+	+	39	0
+	+	38	3
+	+	492	0
+	+	493	0
+	+	485	0
+	+	500	0
+	+	7	17
+	+	7	0
+	+	492	0
+	+	486	0
+	+	500	8
+	+	501	0
+	+	492	0
+	+	493	0
+	+	494	0
+	+	495	0
+	+	496	0
+	+	497	0
+	+	498	0
+
+> ~/book/l4/cpp/Highlight test
+	*	1542387125	0
+	"	312	23
+	^	312	24
+	.	312	23
+	+	312	23
+
+> ~/book/l4/cpp/NERD_tree_1
+	*	1542387119	0
+	"	4	0
+	.	1	0
+	+	1	0
+
+> ~/book/l4/cpp/__Tagbar__.1
+	*	1542387115	0
+	"	1	0
+
+> ~/.vimrc
+	*	1542386376	0
+	"	479	0
+	.	58	0
+	+	36	39
+	+	36	0
+	+	58	26
+	+	58	22
+	+	58	0
+	+	58	24
+	+	135	0
+	+	479	0
+	+	58	0
+
+> ~/.vim/plugged/jedi-vim/after/syntax/python.vim
+	*	1542385612	0
+	"	1	0
+
+> ~/.vim/plugged/test.cpp
+	*	1542383941	0
+	"	1	0
+
+> ~/book/l4/cpp/type.h
+	*	1542383113	0
+	"	1	3
+	^	10	2
+	.	1	3
+	+	1	0
+	+	4	24
+	+	5	23
+	+	11	0
+	+	5	5
+	+	6	1
+	+	10	0
+	+	7	9
+	+	8	25
+	+	10	0
+	+	8	10
+	+	9	40
+	+	10	1
+	+	1	3
+
+> ~/book/l4/cpp/Makefile
+	*	1542382343	0
+	"	1	0
+	^	6	8
+	.	6	7
+	+	2	3
+	+	7	0
+	+	2	3
+	+	3	20
+	+	6	7
+
+> ~/book/l4/policy/999-index/index.rst
+	*	1542381526	0
+	"	4	11
+	^	4	24
+	.	4	11
+	+	6	14
+	+	7	0
+	+	6	0
+	+	1	0
+	+	2	18
+	+	3	0
+	+	4	11
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/lib/libk/cxx/type_traits
+	*	1542301517	0
+	"	285	0
+
+> ~/book/l4/policy/001-code/images/000-introduction.rst
+	*	1542299182	0
+	"	1	0
+
+> ~/test.c
+	*	1542298569	0
+	"	21	400
+	^	21	401
+	.	21	400
+	+	4	65
+	+	5	33
+	+	6	94
+	+	12	117
+	+	15	213
+	+	21	399
+	+	21	400
+
+> ~/workspace/aaa.cpp
+	*	1542297978	0
+	"	101	2239
+	^	101	2240
+	.	101	2241
+	+	5	23
+	+	8	25
+	+	10	107
+	+	12	94
+	+	13	80
+	+	13	85
+	+	13	90
+	+	14	58
+	+	16	107
+	+	17	80
+	+	18	58
+	+	20	111
+	+	21	57
+	+	22	92
+	+	22	102
+	+	37	423
+	+	40	572
+	+	42	608
+	+	42	616
+	+	43	615
+	+	45	699
+	+	45	708
+	+	46	733
+	+	62	1093
+	+	66	1211
+	+	89	1964
+	+	91	2000
+	+	91	2008
+	+	94	2091
+	+	94	2100
+	+	95	2125
+	+	101	2239
+	+	101	2241
+
+> ~/book/l4/policy/index.rst.in
+	*	1542296346	0
+	"	11	17
+	^	11	18
+	.	11	17
+	+	9	11
+	+	10	11
+	+	9	11
+	+	10	10
+	+	9	0
+	+	11	17
+
+> ~/book/l4/policy/conf.py.in
+	*	1542296330	0
+	"	306	0
+	^	104	34
+	.	104	31
+	+	104	31
+
+> ~/book/mainline-kernel-4.9.51/policy/005-arm/ch-003-arm64-exception.rst
+	*	1542295185	0
+	"	247	98
+
+> ~/book/l4/policy/001-code/index.rst
+	*	1542290750	0
+	"	2	0
+	^	2	0
+	.	2	0
+	+	5	0
+	+	12	0
+	+	1	7
+	+	3	17
+	+	2	0
+
+> ~/book/l4/policy/001-l4v.rst
+	*	1542290431	0
+	"	81	0
+
+> ~/book/l4/policy/000-index/index.rst
+	*	1542290325	0
+	"	8	0
+	^	1	8
+	.	9	0
+	+	5	0
+	+	9	0
+	+	2	24
+	+	3	0
+	+	1	8
+	+	2	0
+	+	1	5
+	+	5	0
+	+	9	0
+
+> ~/book/l4/policy/genindex.sh
+	*	1542290233	0
+	"	28	0
+
+> ~/book/l4/2html.sh
+	*	1541852442	0
+	"	1	0
+
+> ~/book/l4/tes.cpp
+	*	1541848558	0
+	"	17	22
+	^	17	23
+	.	17	22
+	+	5	55
+	+	15	30
+	+	16	1
+	+	18	0
+	+	17	37
+	+	1	16
+	+	17	34
+	+	18	4
+	+	8	20
+	+	14	0
+	+	8	16
+	+	9	1
+	+	13	0
+	+	8	40
+	+	10	13
+	+	11	23
+	+	8	34
+	+	11	43
+	+	12	12
+	+	17	23
+	+	18	0
+	+	17	22
+
+> ~/book/forex-book/policy/ch-deductive.rst
+	*	1541458235	0
+	"	1	0
+
+> ~/book/wave/policy/index.rst.in
+	*	1541457780	0
+	"	11	3
+	.	11	0
+	+	13	0
+	+	11	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/kern/arm/64/mmu-arm-64.cpp
+	*	1541434549	0
+	"	122	0
+
+> ./arm/64/mmu-arm-64.cpp
+	*	1541434503	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/kern/amd64/Makerules.SYMBOLS.amd64
+	*	1541434418	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/lib/libk/simple_alloc.h
+	*	1541432756	0
+	"	25	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/lib/libk/cxx/cxx_int
+	*	1541432706	0
+	"	559	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/lib/libk/bitmap.cpp
+	*	1541432660	0
+	"	147	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/preprocess/src/foo.cc
+	*	1541431189	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/preprocess/src/foo.h
+	*	1541431170	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/preprocess/src/foo_i.h
+	*	1541431166	0
+	"	11	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/preprocess/src/foo.cpp
+	*	1541430837	0
+	"	1	0
+	^	25	10
+	.	25	9
+	+	5	19
+	+	9	25
+	+	16	15
+	+	22	27
+	+	25	9
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/preprocess/src/Makefile
+	*	1541430834	0
+	"	25	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/preprocess/src/foo.cpp_i.b
+	*	1541430820	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/preprocess/src/foo.cpp.b
+	*	1541430807	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/kern/logdefs.h
+	*	1541430622	0
+	"	168	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/preprocess/src/a.cpp_i.h
+	*	1541430303	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/preprocess/src/a.cpp.h
+	*	1541430295	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/preprocess/src/preprocess
+	*	1541277729	0
+	"	282	9
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/README.style
+	*	1541277691	0
+	"	1	1
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/kern/arm/bsp/realview/uart-arm-realview.cpp
+	*	1541277562	0
+	"	14	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/kern/ipc_gate.cpp
+	*	1541273092	0
+	"	1	0
+
+> ~/hacking/l4re-snapshot-18.09/src/l4/pkg/io/io/server/src/virt/vmsi.cc
+	*	1541272337	0
+	"	27	10
+
+> /etc/apt/sources.list
+	*	1541272318	0
+	"	53	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/kernel.amd64.ld
+	*	1541268353	0
+	"	242	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/boot/bootstrap.cc
+	*	1541268203	0
+	"	63	32
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/boot/boot_libc_glue.cc
+	*	1541268186	0
+	"	13	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/boot/boot_cpu.h
+	*	1541268174	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/boot/direct_cons_putchar.cc
+	*	1541268168	0
+	"	44	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/Makefile
+	*	1541268154	0
+	"	1	0
+	^	32	1
+	.	32	0
+	+	31	0
+	+	32	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/boot/amd64/boot_idt.S
+	*	1541268136	0
+	"	82	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/boot/amd64/boot.S
+	*	1541268121	0
+	"	9	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/lib/uart/Makefile
+	*	1541266802	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/Make
+	*	1541266313	0
+	"	1	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/.gitignore
+	*	1541266275	0
+	"	1	0
+	^	1	6
+	.	1	0
+	+	1	0
+
+> ~/hacking/makefile/Makefile
+	*	1541265700	0
+	"	2	10
+	^	2	11
+	.	2	10
+	+	6	0
+	+	9	1
+	+	9	14
+	+	10	3
+	+	11	15
+	+	8	9
+	+	12	5
+	+	13	0
+	+	9	0
+	+	13	0
+	+	10	9
+	+	15	6
+	+	11	0
+	+	16	0
+	+	2	10
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/build/Kconfig
+	*	1541264609	0
+	"	1987	1
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/tool/kconfig/Makefile
+	*	1541264031	0
+	"	41	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/build/Makefile
+	*	1541261789	0
+	"	8	0
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/Makefile
+	*	1541257931	0
+	"	287	1
+
+> ~/hacking/fiasco-18.09/src/kernel/fiasco/src/lib/gzip/crc32.c
+	*	1541256896	0
+	"	162	0
+
+> ~/book/geek-of-algorithm/Makefile
+	*	1540769854	0
+	"	1	0
+	^	10	17
+	.	10	16
+	+	11	0
+	+	10	0
+	+	12	15
+	+	11	22
+	+	10	16
+
+> ~/book/geek-of-algorithm/policy/genindex.sh
+	*	1540769697	0
+	"	5	23
+	^	5	24
+	.	5	23
+	+	5	23
+
+> ~/book/geek-of-algorithm/policy/index.rst.in
+	*	1540769592	0
+	"	15	0
+
+> ~/book/algorithm/create.sh
+	*	1540768469	0
+	"	1	0
+
+> ~/book/algorithm/.gitignore
+	*	1540768283	0
+	"	1	0
+	^	21	0
+	.	1	0
+	+	20	28
+	+	1	0
+
+> ~/book/algorithm/Makefile
+	*	1540768195	0
+	"	13	31
+	^	181	2
+	.	153	40
+	+	181	1
+	+	156	0
+	+	153	40
+
+> ~/book/algorithm/policy/ch-ecc.rst
+	*	1540767995	0
+	"	9	0
+
+> ~/book/algorithm/policy/index.rst.in
+	*	1540767493	0
+	"	13	0
+
+> ~/hacking/book/ecc/policy/ch-ecc.rst
+	*	1540766655	0
+	"	32	0
+
+> ~/bin/repo
+	*	1539396680	0
+	"	1	10
+
+> ~/workspace/verification/l4v/spec/design/Makefile
+	*	1539364740	0
+	"	14	0
+
+> ~/workspace/verification/l4v/spec/abstract/document/root.tex
+	*	1539363968	0
+	"	60	0
+	.	60	0
+	+	60	0
+	+	99	0
+	+	60	0
+
+> ~/workspace/verification/l4v/proof/invariant-abstract/X64/ArchFinalise_AI.thy
+	*	1539363587	0
+	"	1	0
+
+> ~/workspace/verification/l4v/spec/abstract/document/X64/ARCH.tex
+	*	1539363385	0
+	"	1	0
+
+> ~/hacking/l4v/README.md
+	*	1539359592	0
+	"	258	47
+
+> ~/hacking/book/api-port/policy/index.rst
+	*	1538935542	0
+	"	5	0
+
+> ~/hacking/book/api-port/policy/ch-vxworks.rst
+	*	1538935497	0
+	"	1	0
+
+> ~/book/action/Makefile
+	*	1538935419	0
+	"	191	54
+	^	191	55
+	.	191	54
+	+	191	54
+
+> ~/hacking/book/api-port/Makefile
+	*	1538935393	0
+	"	195	1
+
+> ~/book/action/policy/001-background/001-action.rst
+	*	1538924566	0
+	"	16	0
+
+> ~/book/1001/policy/001-background/2.rst
+	*	1537823086	0
+	"	1	0
+
+> ~/book/1001/policy/001-background/1.rst
+	*	1537823083	0
+	"	1	0
+	^	3	23
+	.	3	22
+	+	1	0
+	+	3	22
+
+> ~/book/1001/build.sh
+	*	1537610919	0
+	"	7	9
+	^	7	10
+	.	7	9
+	+	2	19
+	+	6	4
+	+	7	9
+
+> ~/book/1001/view.sh
+	*	1537610126	0
+	"	1	0
+
+> ~/book/1001/policy/genindex.sh
+	*	1537609805	0
+	"	28	4
+	.	28	0
+	+	28	0
+
+> ~/book/1001/policy/index.rst.in
+	*	1537609751	0
+	"	1	0
+
+> ~/book/1001/policy/index.rst
+	*	1537609748	0
+	"	1	0
+
+> ~/hacking/1001/policy/001-background/000.rst
+	*	1537548700	0
+	"	1	0
+
+> ~/hacking/doc-template-master/2html.sh
+	*	1537485641	0
+	"	2	0
+
+> ~/桌面/新建文件
+	*	1537483724	0
+	"	1	0
+
+> ~/hacking/doc-template-master/view.sh
+	*	1537223672	0
+	"	1	7
+	^	1	8
+	.	1	7
+	+	1	7
+
+> ~/hacking/doc-template-master/__Tagbar__.1
+	*	1537222380	0
+	"	1	0

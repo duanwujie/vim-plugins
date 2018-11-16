@@ -1,0 +1,12 @@
+xterm*ScrollBar: true
+xterm*faceName: WenQuanYi Micro Hei
+
+!-- chinese font begin----
+!xterm*faceNameDoublesize: WenQuanYi Micro Hei
+xterm*faceNameDoublesize: NSimSun:style=Regular
+!-- chinese font end-----
+!xterm*faceSize: 24
+!xterm*allowBoldFonts: false
+!xterm*foreground: grey100 
+!xterm*background: rgb:30/10/10
+!xterm*background: black

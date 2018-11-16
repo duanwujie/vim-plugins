@@ -1,0 +1,76 @@
+
+操作系统内核中的快速中断优先级管理
+===================================
+
+翻译于:https://www.usenix.org/legacy/publications/library/proceedings/micro93/full_papers/stodolsky.txt
+
+
+
+摘要
+-------
+
+在本文中，我们描述了一种新的技术,用于操作系统内核中的处理器中断状态。
+单处理器和多处理器操作系统通过在关键部分选择性地启用和禁用中断来防止处理器死锁和数据损坏
+
+这种情况在IPC，调度和内存管理等重要延迟活动中经常发生。 不幸的是，在最近的处理器体系结构中，修改中断掩码的周期成本增加了一个数量级。 
+在本文中，我们描述了乐观中断保护，这种技术通过在没有中断的情况下通过优化掩码操作来大幅降低中断屏蔽的成本。
+
+
+介绍
+---------
+
+本文描述了一种新的技术 "optimistic interrupt protection"（乐观中断保护),与传统方法相比，用来降低中断管理成本,
+尽管现代处理器体系结构已经导致整体性能的显着提高，但是和应用程序代码相比操作系统获得的好处要少得多。其中中断
+管理就与处理器速度不成比例。操作系统使用中断来控制进程调度和I/O，并且使用中断屏蔽在中断级别保证资源共享的完整性。
+
+这种方法在很多方面是有效的,先前的处理器架构（例如VAX），其中中断成本代价变化很小 -- 一般不到十条指令,
+然而在在现代体系结构中，中断屏蔽可能高达一个数量级以上,高昂的代价导致系统代码的性能较差。
+
+乐观的中断保护避免了中断掩码操作的性能损失，同时保留了中断模型的语义。我们在Mach 3.0微内核中有几个不同的处理器架构中，
+实现了乐观中断保护, 在 Omron Luna88k，我们观察到减少了50%中断管理开销，导致IPC实现了5.3％的加速。
+
+
+本文的其余部分描述了该技术及其性能。在第中断管理这一章节中，我们回顾了中断引入的基本问题，讨论乐观的中断处理的在一般模型中断处理的
+适用性，并提出了一个高性能机制。 在第乐观中断保护这一章节中，我们描述了实现和使用乐观中断保护。 在第性能这节我们讨论我们的方法的性能。 在第
+6节我们讨论相关工作。 最后，在第7节我们提出我们的结论。
+
+
+中断管理
+----------
+
+操作系统通常依靠中断响应外部或内部生成的异步事件。因为中断将并发性引入操作系统内核。系统级机制是避免死锁和并发访问系统数据结构所必须的。
+中断屏蔽是存在异步事件时数据保护的常用技术。中断屏蔽已经被大量的操作系统使用，包括Mach，Unix，VMS和NT。它可以很好地映射到各种硬件上，
+从具有单一中断级别的系统到具有丰富中断结构的处理器。在单处理器上，不需要额外的同步原语。中断屏蔽模型的一个重要特性是，
+对时间敏感的事件可以抢占长时间运行的低优先级活动。尽管已经提出了中断模型的替代方案。
+
+In pipelined processors, writing the processor interrupt mask typically requires a pipeline flush。In superscalar systems, 
+interrupt level manipulations require scalar instruction issue, further limiting performance.
+
+
+Many recent RISC CPU implementations provide only a part of the interrupt mask logic on the
+processor package, with the remainder of interrupt masking implemented by off-processor hardware [Motorola 90, DEC 92].  For these systems,
+interrupt masking is a three step process: 
+1. disable processor interrupts
+2. write the off-chip mask register(s), 
+3. finally re-enable processor interrupts.  
+The first stage requires a pipeline flush, and the second stage requires a potentially expensive off-chip
+access.  This represents a significant increase in the relative
+latency of interrupt mask manipulations.  
+
+
+
+乐观中断保护
+-------------
+
+乐观中断保护，该技术利用最通常的事实: 关键部分不会发生中断，当一个处理在进入临界区
+
+
+性能
+--------------
+
+相关工作
+----------
+
+
+结论
+----------

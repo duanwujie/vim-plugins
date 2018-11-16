@@ -1,0 +1,274 @@
+
+
+
+
+#include <time.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include <stdio.h>
+#include <math.h>
+
+#include <mysql/mysql.h>
+
+#include <iostream>
+#include <list>
+
+using namespace std;
+
+const char * hostname = "localhost";
+const char * username = "root";
+const char * password = "123456";
+const char * dbname   = "stockdb";
+const unsigned short server_port = 3306;
+
+
+void prepare_sql()
+{
+    printf("START TRANSACTION;\n");
+}
+
+
+void finish_sql()
+{
+    printf("COMMIT;\n");
+}
+
+
+
+struct stockformat
+{
+    unsigned int year;
+    unsigned int month;
+    unsigned int day;
+    unsigned int hour;
+    unsigned int minutes;
+	float open_price;
+	float high_price;
+	float low_price;
+	float close_price;
+	float turnover;
+	unsigned int volume;
+	unsigned int reserved;
+};
+
+unsigned int toUnixTimestamp(int year,int month,int day,int hour,int minutes)
+{
+    struct tm tm;
+    tm.tm_year = year - 1900;
+    tm.tm_mon = month - 1;
+    tm.tm_mday = day;
+    tm.tm_hour = hour;
+    tm.tm_min = minutes;
+    tm.tm_sec = 0;
+    tm.tm_isdst = 0;
+    return mktime(&tm);
+}
+
+
+
+
+double caculate_ma(list<float> & list)
+{
+    double sum = 0;
+    std::list<float>::iterator it;
+    for(it=list.begin();it!=list.end();it++)
+    {
+        sum += *it;
+    }
+    return (sum/list.size());
+}
+
+
+
+double icustom_ma(list<float> &l,int id,int num,double price)
+{
+    double ma;
+    if(id<num){
+        l.push_back(price);
+        return 0;
+    }else
+    {
+        l.push_back(price);
+        if(id>num)
+            l.pop_front();
+        ma = caculate_ma(l);
+    }
+    return ma;
+}
+
+
+
+
+const char* getfield(char* line, int num)
+{
+    const char* tok;
+    for (tok = strtok(line, ",");
+            tok && *tok;
+            tok = strtok(NULL, ",\n"))
+    {
+        if (!--num)
+            return tok;
+    }
+    return NULL;
+}
+
+void parse_date(char * line,int * year,int *month,int *day)
+{
+    const char * tok;
+    tok = strtok(line, "/");
+    *year = atoi(tok);
+    tok = strtok(NULL, "/");
+    *month = atoi(tok);
+    tok = strtok(NULL, "\n");
+    *day = atoi(tok);
+}
+
+void parse_time(char * line,int * hour,int *minutes)
+{
+    const char * tok;
+    tok = strtok(line, ":");
+    *hour = atoi(tok);
+    tok = strtok(NULL, "\n");
+    *minutes = atoi(tok);
+}
+
+void readcsv(struct stockformat * buffer,char *line)
+{
+    char * strEnd;
+    int year,month,day,hour,minutes;
+    float iopen,ihigh,ilow,iclose;
+    float volume,turnover;
+    const char * tok;
+    char *str_date;
+    char *str_time;
+    tok = strtok(line, ",");
+    str_date = strdup(tok);
+    tok = strtok(NULL, ",");
+    str_time = strdup(tok);
+
+
+    tok = strtok(NULL, ",");
+    iopen = strtof(tok,&strEnd);
+    tok = strtok(NULL, ",");
+    ihigh = strtof(tok,&strEnd);
+    tok = strtok(NULL, ",");
+    ilow = strtof(tok,&strEnd);
+    tok = strtok(NULL, ",");
+    iclose = strtof(tok,&strEnd);
+    tok = strtok(NULL, ",");
+    volume = strtof(tok,&strEnd);
+
+    tok = strtok(NULL,"\n");
+    turnover = strtof(tok,&strEnd);
+
+    parse_date(str_date,&year,&month,&day);
+    parse_time(str_time,&hour,&minutes);
+    free(str_date);
+    free(str_time);
+
+    buffer->open_price = iopen;
+    buffer->close_price = iclose;
+    buffer->high_price = ihigh;
+    buffer->low_price = ilow;
+    buffer->year = year;
+    buffer->month = month;
+    buffer->day = day;
+    buffer->hour = hour;
+    buffer->minutes = minutes;
+    buffer->volume = volume;
+    buffer->turnover = turnover;
+
+}
+
+
+int main(int argc,char *argv[])
+{
+	
+    int year;
+    int month;
+    int day;
+    unsigned int timestamp;
+
+
+    float opened,closed,high,low;
+    float ma5,ma10,ma20,ma30,ma60;
+    float va5,va10,va20,va30,va60;
+
+
+
+
+    list<float> l[5];
+    list<float> v[5];
+
+
+
+    float volume;
+    float turnover;
+    int hour;
+    int minutes;
+    unsigned int id=0;
+    unsigned long long real_id = 0;
+    int fsize;
+    int pos = 0;
+    int readlen = 0;
+	struct  stockformat buffer;
+
+    struct stat stat;
+    
+    int fd;
+    int wfd;
+    char write_buffer[512];
+    
+    unsigned long long code = atoi(argv[2]);
+
+    prepare_sql();
+
+    FILE* stream = fopen(argv[1], "r");
+    char line[1024];
+    while (fgets(line, 1024, stream))
+    {
+        char* tmp = strdup(line);
+        readcsv(&buffer,tmp);
+        free(tmp);
+
+        opened = buffer.open_price;
+        closed = buffer.close_price;
+        high = buffer.high_price;
+        low = buffer.low_price;
+        year=buffer.year;
+        month=buffer.month;
+        day = buffer.day;
+
+        hour = buffer.hour;
+        minutes = buffer.minutes;
+        turnover = buffer.turnover;
+        volume = buffer.volume;
+
+        timestamp = toUnixTimestamp(year,month,day,hour,minutes);
+        id++;
+        real_id = (code<<32) | timestamp;
+        ma5 = icustom_ma(l[0],id,5,closed);
+        ma10 = icustom_ma(l[1],id,10,closed);
+        ma20 = icustom_ma(l[2],id,20,closed);
+        ma30 = icustom_ma(l[3],id,30,closed);
+        ma60 = icustom_ma(l[4],id,60,closed);
+
+        va5 = icustom_ma(v[0],id,5,volume);
+        va10 = icustom_ma(v[1],id,10,volume);
+        va20 = icustom_ma(v[2],id,20,volume);
+        va30 = icustom_ma(v[3],id,30,volume);
+        va60 = icustom_ma(v[4],id,60,volume);
+        sprintf(write_buffer,"insert into `%s` values(%llu,%u,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,'%d/%d/%d','%d:%d:00');\n",argv[3],real_id,timestamp,opened,closed,high,low,volume,turnover,ma5,ma10,ma20,ma30,ma60,va5,va10,va20,va30,va60,year,month,day,hour,minutes);
+        //sprintf(write_buffer,"%d/%d/%d,%d:%d:00,%f,%f,%f,%f,%d,%f\n",year,month,day,hour,minutes,opened,closed,high,low,volume,turnover);
+        printf("%s",write_buffer);
+        memset(write_buffer,0,512);
+    };
+
+    finish_sql();
+	fclose(stream);
+}

@@ -1,0 +1,280 @@
+Lcn/jiguang/b/d/c;.a(Lcn/jiguang/b/b/g;J)I
+java.lang.RuntimeException: fail exe a58 = a30
+	at com.googlecode.dex2jar.ir.ts.an.BaseAnalyze.exec(BaseAnalyze.java:92)
+	at com.googlecode.dex2jar.ir.ts.an.BaseAnalyze.exec(BaseAnalyze.java:1)
+	at com.googlecode.dex2jar.ir.ts.Cfg.dfs(Cfg.java:255)
+	at com.googlecode.dex2jar.ir.ts.an.BaseAnalyze.analyze0(BaseAnalyze.java:75)
+	at com.googlecode.dex2jar.ir.ts.an.BaseAnalyze.analyze(BaseAnalyze.java:69)
+	at com.googlecode.dex2jar.ir.ts.UnSSATransformer.transform(UnSSATransformer.java:274)
+	at com.googlecode.d2j.dex.Dex2jar$2.optimize(Dex2jar.java:163)
+	at com.googlecode.d2j.dex.Dex2Asm.convertCode(Dex2Asm.java:414)
+	at com.googlecode.d2j.dex.ExDex2Asm.convertCode(ExDex2Asm.java:42)
+	at com.googlecode.d2j.dex.Dex2jar$2.convertCode(Dex2jar.java:128)
+	at com.googlecode.d2j.dex.Dex2Asm.convertMethod(Dex2Asm.java:509)
+	at com.googlecode.d2j.dex.Dex2Asm.convertClass(Dex2Asm.java:406)
+	at com.googlecode.d2j.dex.Dex2Asm.convertDex(Dex2Asm.java:422)
+	at com.googlecode.d2j.dex.Dex2jar.doTranslate(Dex2jar.java:172)
+	at com.googlecode.d2j.dex.Dex2jar.to(Dex2jar.java:272)
+	at com.googlecode.dex2jar.tools.Dex2jarCmd.doCommandLine(Dex2jarCmd.java:108)
+	at com.googlecode.dex2jar.tools.BaseCmd.doMain(BaseCmd.java:288)
+	at com.googlecode.dex2jar.tools.Dex2jarCmd.main(Dex2jarCmd.java:32)
+Caused by: java.lang.NullPointerException
+	at com.googlecode.dex2jar.ir.ts.UnSSATransformer$LiveA.onUseLocal(UnSSATransformer.java:552)
+	at com.googlecode.dex2jar.ir.ts.UnSSATransformer$LiveA.onUseLocal(UnSSATransformer.java:1)
+	at com.googlecode.dex2jar.ir.ts.an.BaseAnalyze.onUse(BaseAnalyze.java:166)
+	at com.googlecode.dex2jar.ir.ts.an.BaseAnalyze.onUse(BaseAnalyze.java:1)
+	at com.googlecode.dex2jar.ir.ts.Cfg.travel(Cfg.java:331)
+	at com.googlecode.dex2jar.ir.ts.Cfg.travel(Cfg.java:387)
+	at com.googlecode.dex2jar.ir.ts.an.BaseAnalyze.exec(BaseAnalyze.java:90)
+	... 17 more
+
+
+.method private static a(Lcn/jiguang/b/b/g;J)I
+    .catch Ljava/lang/Exception; { :L0 .. :L1 } :L21
+    .catch Ljava/lang/Exception; { :L2 .. :L3 } :L25
+    .catch Ljava/lang/Exception; { :L4 .. :L5 } :L27
+    .catch Ljava/lang/Exception; { :L7 .. :L8 } :L25
+    .catch Ljava/lang/Exception; { :L10 .. :L14 } :L21
+    .catch Ljava/lang/Exception; { :L16 .. :L17 } :L26
+    .registers 16
+    const/4 v12, 4
+    const/4 v3, 0
+    const/4 v11, 1
+    const/4 v4, -1
+    const/4 v10, 3
+    const/4 v2, 0
+    :L0
+    sget-object v0, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/4 v1, 0
+    aget-object v0, v0, v1
+    invoke-static { v0 }, Lcn/jiguang/b/c/f;->a(Ljava/lang/String;)Ljava/util/List;
+    move-result-object v0
+    invoke-interface { v0 }, Ljava/util/List;->size()I
+    move-result v1
+    if-lez v1, :L10
+    invoke-interface { v0 }, Ljava/util/List;->iterator()Ljava/util/Iterator;
+    :L1
+    move-result-object v6
+    move v1, v4
+    :L2
+    invoke-interface { v6 }, Ljava/util/Iterator;->hasNext()Z
+    move-result v0
+    if-eqz v0, :L29
+    invoke-interface { v6 }, Ljava/util/Iterator;->next()Ljava/lang/Object;
+    move-result-object v0
+    check-cast v0, Lcn/jiguang/b/c/p;
+    invoke-virtual { v0 }, Lcn/jiguang/b/c/p;->i()Lcn/jiguang/b/c/j;
+    move-result-object v5
+    invoke-virtual { v5 }, Lcn/jiguang/b/c/j;->toString()Ljava/lang/String;
+    move-result-object v5
+    invoke-static { v5 }, Landroid/text/TextUtils;->isEmpty(Ljava/lang/CharSequence;)Z
+    :L3
+    move-result v5
+    if-nez v5, :L2
+    const/4 v5, 0
+    :L4
+    invoke-virtual { v0 }, Lcn/jiguang/b/c/p;->i()Lcn/jiguang/b/c/j;
+    move-result-object v7
+    invoke-virtual { v7 }, Lcn/jiguang/b/c/j;->toString()Ljava/lang/String;
+    move-result-object v7
+    invoke-static { v7 }, Lcn/jiguang/b/d/c;->b(Ljava/lang/String;)Ljava/net/InetAddress;
+    :L5
+    move-result-object v5
+    :L6
+    if-eqz v5, :L2
+    :L7
+    invoke-virtual { v5 }, Ljava/net/InetAddress;->getHostAddress()Ljava/lang/String;
+    move-result-object v2
+    invoke-virtual { v0 }, Lcn/jiguang/b/c/p;->h()I
+    move-result v3
+    sget-object v0, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/4 v5, 3
+    aget-object v0, v0, v5
+    new-instance v5, Ljava/lang/StringBuilder;
+    sget-object v7, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/4 v8, 7
+    aget-object v7, v7, v8
+    invoke-direct { v5, v7 }, Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V
+    invoke-virtual { v5, v2 }, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    move-result-object v5
+    sget-object v7, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/4 v8, 1
+    aget-object v7, v7, v8
+    invoke-virtual { v5, v7 }, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    move-result-object v5
+    invoke-virtual { v5, v3 }, Ljava/lang/StringBuilder;->append(I)Ljava/lang/StringBuilder;
+    move-result-object v5
+    invoke-virtual { v5 }, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+    move-result-object v5
+    invoke-static { v0, v5 }, Lcn/jiguang/c/d;->d(Ljava/lang/String;Ljava/lang/String;)V
+    invoke-static { v2 }, Lcn/jiguang/e/h;->a(Ljava/lang/String;)Z
+    move-result v0
+    if-nez v0, :L30
+    if-eqz v3, :L30
+    invoke-static { p0, p1, p2, v2, v3 }, Lcn/jiguang/b/d/c;->a(Lcn/jiguang/b/b/g;JLjava/lang/String;I)I
+    :L8
+    move-result v0
+    if-eqz v0, :L19
+    :L9
+    move v1, v0
+    goto :L2
+    :L10
+    sget-object v0, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/16 v1, 8
+    aget-object v0, v0, v1
+    invoke-static { v0 }, Lcn/jiguang/b/d/c;->b(Ljava/lang/String;)Ljava/net/InetAddress;
+    move-result-object v0
+    if-nez v0, :L12
+    move v0, v4
+    :L11
+    return v0
+    :L12
+    invoke-virtual { v0 }, Ljava/net/InetAddress;->getHostAddress()Ljava/lang/String;
+    move-result-object v2
+    invoke-static { v2 }, Landroid/text/TextUtils;->isEmpty(Ljava/lang/CharSequence;)Z
+    move-result v0
+    if-eqz v0, :L13
+    move v0, v4
+    goto :L11
+    :L13
+    const/4 v0, 4
+    new-array v6, v0, [I
+    :L14
+    fill-array-data v6, :L31
+    move v5, v3
+    move v0, v4
+    move v1, v3
+    :L15
+    if-ge v5, v12, :L18
+    :L16
+    aget v1, v6, v5
+    sget-object v3, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/4 v7, 3
+    aget-object v3, v3, v7
+    new-instance v7, Ljava/lang/StringBuilder;
+    sget-object v8, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/4 v9, 2
+    aget-object v8, v8, v9
+    invoke-direct { v7, v8 }, Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V
+    invoke-virtual { v7, v2 }, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    move-result-object v7
+    sget-object v8, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/4 v9, 1
+    aget-object v8, v8, v9
+    invoke-virtual { v7, v8 }, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    move-result-object v7
+    invoke-virtual { v7, v1 }, Ljava/lang/StringBuilder;->append(I)Ljava/lang/StringBuilder;
+    move-result-object v7
+    invoke-virtual { v7 }, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+    move-result-object v7
+    invoke-static { v3, v7 }, Lcn/jiguang/c/d;->d(Ljava/lang/String;Ljava/lang/String;)V
+    invoke-static { p0, p1, p2, v2, v1 }, Lcn/jiguang/b/d/c;->a(Lcn/jiguang/b/b/g;JLjava/lang/String;I)I
+    :L17
+    move-result v0
+    if-eqz v0, :L18
+    add-int/lit8 v3, v5, 1
+    move v5, v3
+    goto :L15
+    :L18
+    move v3, v1
+    :L19
+    if-eqz v0, :L28
+    invoke-static { }, Lcn/jiguang/b/a/a;->o()Ljava/lang/String;
+    move-result-object v1
+    invoke-static { }, Lcn/jiguang/b/a/a;->p()I
+    move-result v2
+    sget-object v0, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    aget-object v0, v0, v10
+    new-instance v3, Ljava/lang/StringBuilder;
+    sget-object v5, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    aget-object v5, v5, v12
+    invoke-direct { v3, v5 }, Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V
+    invoke-virtual { v3, v1 }, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    move-result-object v3
+    sget-object v5, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    aget-object v5, v5, v11
+    invoke-virtual { v3, v5 }, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    move-result-object v3
+    invoke-virtual { v3, v2 }, Ljava/lang/StringBuilder;->append(I)Ljava/lang/StringBuilder;
+    move-result-object v3
+    invoke-virtual { v3 }, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+    move-result-object v3
+    invoke-static { v0, v3 }, Lcn/jiguang/c/d;->d(Ljava/lang/String;Ljava/lang/String;)V
+    invoke-static { v1 }, Lcn/jiguang/e/h;->a(Ljava/lang/String;)Z
+    move-result v0
+    if-nez v0, :L20
+    if-nez v2, :L23
+    :L20
+    sget-object v0, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    aget-object v0, v0, v10
+    sget-object v1, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/4 v2, 6
+    aget-object v1, v1, v2
+    invoke-static { v0, v1 }, Lcn/jiguang/c/d;->d(Ljava/lang/String;Ljava/lang/String;)V
+    move v0, v4
+    goto/16 :L11
+    :L21
+    move-exception v0
+    move v0, v4
+    :L22
+    sget-object v1, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    aget-object v1, v1, v10
+    sget-object v5, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/16 v6, 9
+    aget-object v5, v5, v6
+    invoke-static { v1, v5 }, Lcn/jiguang/c/d;->c(Ljava/lang/String;Ljava/lang/String;)V
+    goto :L19
+    :L23
+    invoke-static { p0, p1, p2, v1, v2 }, Lcn/jiguang/b/d/c;->a(Lcn/jiguang/b/b/g;JLjava/lang/String;I)I
+    move-result v0
+    move v3, v2
+    :L24
+    if-nez v0, :L11
+    invoke-static { v1, v3 }, Lcn/jiguang/b/a/a;->c(Ljava/lang/String;I)V
+    sget-object v2, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    aget-object v2, v2, v10
+    new-instance v4, Ljava/lang/StringBuilder;
+    sget-object v5, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    const/4 v6, 5
+    aget-object v5, v5, v6
+    invoke-direct { v4, v5 }, Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V
+    invoke-virtual { v4, v1 }, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    move-result-object v1
+    sget-object v4, Lcn/jiguang/b/d/c;->b:[Ljava/lang/String;
+    aget-object v4, v4, v11
+    invoke-virtual { v1, v4 }, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    move-result-object v1
+    invoke-virtual { v1, v3 }, Ljava/lang/StringBuilder;->append(I)Ljava/lang/StringBuilder;
+    move-result-object v1
+    invoke-virtual { v1 }, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+    move-result-object v1
+    invoke-static { v2, v1 }, Lcn/jiguang/c/d;->f(Ljava/lang/String;Ljava/lang/String;)V
+    goto/16 :L11
+    :L25
+    move-exception v0
+    move v0, v1
+    goto :L22
+    :L26
+    move-exception v3
+    move v3, v1
+    goto :L22
+    :L27
+    move-exception v7
+    goto/16 :L6
+    :L28
+    move-object v1, v2
+    goto :L24
+    :L29
+    move v0, v1
+    goto/16 :L19
+    :L30
+    move v0, v1
+    goto/16 :L9
+    :L31
+    .array-data 4
+        -72t 11t 0t 0t
+        88t 27t 0t 0t
+        90t 27t 0t 0t
+        91t 27t 0t 0t
+    .end array-data
+.end method

@@ -1,0 +1,6 @@
+
+unzip sh5fz.zip
+mv sz5fh.zip ../
+rm -fr sh{1,2,4,5,6,7,8,9}*
+rename 's/^sh//' *
+rename 's/\.5$//' *

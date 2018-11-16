@@ -1,0 +1,323 @@
+cobalt内核初始化
+====================
+
+整个cobalt内核的初始化是在函数 ``xenomai_init()`` 中完成，该函数在kernel/xenomai/init.c文件中实现,具体流程如下
+
+1. 设置cobalt内核状态(参见 `cobalt内核的运行状态`_  和 `setup_init_state()`_ )
+2. 判断是否已经启用了cobalt内核，如果启用了直接返回，没有启用则进行后续的初始化操作(参见 `realtime_core_enabled()`_ )
+3. 如果支持多处理器(SMP),对online的cpu掩码进行设置,并保存在变量 ``cobalt_pipeline.supported_cpus`` 
+   例如 ``cobalt_pipeline.supported_cpus=0xC(1011b)`` ,表示支持cpu 3,1,0，不支持cpu 2；
+   如果一个cpu都不支持，则将cobalt内核设置为disable状态，并直接返回,不再进行后续的初始化操作;支持的cpu通过内核参数 ``supported_cpus_arg``
+   进行控制，默认支持所有cpu
+4. 对调度类进行注册(参见 `xnsched_register_classes()`_ )
+5. 对cobalt内核proc虚拟文件系统进行初始化，用于读取cobalt内核的信息和设置cobalt内核；(参见 `xnprocfs_init_tree()`_ )
+6. 对ipipe，时钟，定时器和中断相关的初始化;(参见 `mach_setup()`_ )
+
+* 内核实现)
+
+    .. code-block:: c
+    
+        static int __init xenomai_init(void)
+        {
+        	int ret, __maybe_unused cpu;
+        
+        
+        
+        
+        	ret = mach_setup();
+        	if (ret)
+        		goto cleanup_proc;
+        
+        	xnintr_mount();
+        
+        	ret = xnpipe_mount();
+        	if (ret)
+        		goto cleanup_mach;
+        
+        	ret = xnselect_mount();
+        	if (ret)
+        		goto cleanup_pipe;
+        
+        	ret = sys_init();
+        	if (ret)
+        		goto cleanup_select;
+        
+        	ret = mach_late_setup();
+        	if (ret)
+        		goto cleanup_sys;
+        
+        	ret = rtdm_init();
+        	if (ret)
+        		goto cleanup_sys;
+        
+        	ret = cobalt_init();
+        	if (ret)
+        		goto cleanup_rtdm;
+        
+        	rtdm_fd_init();
+        
+        	printk(XENO_INFO "Cobalt v%s (%s) %s%s%s%s\n",
+        	       XENO_VERSION_STRING,
+        	       XENO_VERSION_NAME,
+        	       boot_debug_notice,
+        	       boot_lat_trace_notice,
+        	       boot_evt_trace_notice,
+        	       boot_state_notice);
+        
+        	return 0;
+    
+        cleanup_rtdm:
+        	rtdm_cleanup();
+        cleanup_sys:
+        	sys_shutdown();
+        cleanup_select:
+        	xnselect_umount();
+        cleanup_pipe:
+        	xnpipe_umount();
+        cleanup_mach:
+        	mach_cleanup();
+        cleanup_proc:
+        	xnprocfs_cleanup_tree();
+        fail:
+        	set_realtime_core_state(COBALT_STATE_DISABLED);
+        	printk(XENO_ERR "init failed, code %d\n", ret);
+        
+        	return ret;
+        }
+        device_initcall(xenomai_init);
+
+cobalt内核的运行状态
+-----------------------
+
+在文件include/xenomai/cobalt/kernel/init.h提供了cobalt内核状态的设置以及cobalt内核状态的判断函数
+
+cobalt内核有5种状态，分别是:
+
+* COBALT_STATE_DISABLED:cobalt内核被禁用了;
+* COBALT_STATE_RUNNING:
+* COBALT_STATE_STOPPED:
+* COBALT_STATE_TEARDOWN:
+* COBALT_STATE_WARMUP:该状态是最开始的状态，热启动状态，在内核编译时进行初始化的状态;
+
+内核引导过程中使用内核参数init_state_arg来进行更改!
+
+
+setup_init_state()
+----------------------
+
+设置Cobalt内核初始化状态,在 ``kernel/xenomai/init.c`` 中实现,cobalt内核状态保存在
+全局原子变量 ``cobalt_runstate`` 中,该状态有内核命令参数 ``init_state_arg`` 指定
+参见 `cobalt内核的运行状态`_
+
+
+realtime_core_enabled()
+---------------------------
+
+如果全局原子变量 ``cobalt_runstate`` 不等于 ``COBALT_STATE_DISABLED`` 则都属于enable状态
+
+
+xnsched_register_classes()
+---------------------------------
+
+调度类的注册,函数xnsched_register_classes()将调度类按照优先级从高到低插入到链表中;
+
+.. figure:: images/schedule-list.png
+
+
+一共有6个调度类:
+
+* xnsched_class_rt:对应实现在kernel/xenomai/sched-rt.c
+* xnsched_class_quota:对应实现在kernel/xenomai/sched-quota.c
+* xnsched_class_sporadic:对应实现在kernel/xenomai/sched-sporadic.c
+* xnsched_class_tp:对应实现在kernel/xenomai/sched-tp.c
+* xnsched_class_weak:对应实现在kernel/xenomai/sched-weak.c
+* xnsched_class_idle:对应实现在kernel/xenomai/sched-idle.c
+
+
+这6个调度类rt的优先级最高，idle的优先级最低
+
+
+调度类
+~~~~~~~~~~~~~~~~~~~~
+
+    .. code-block:: c
+    
+        struct xnsched_class {
+        	void (*sched_init)(struct xnsched *sched);
+        	void (*sched_enqueue)(struct xnthread *thread);
+        	void (*sched_dequeue)(struct xnthread *thread);
+        	void (*sched_requeue)(struct xnthread *thread);
+        	struct xnthread *(*sched_pick)(struct xnsched *sched);
+        	void (*sched_tick)(struct xnsched *sched);
+        	void (*sched_rotate)(struct xnsched *sched,
+        			     const union xnsched_policy_param *p);
+        	void (*sched_migrate)(struct xnthread *thread,
+        			      struct xnsched *sched);
+        	void (*sched_setparam)(struct xnthread *thread,
+        			       const union xnsched_policy_param *p);
+        	void (*sched_getparam)(struct xnthread *thread,
+        			       union xnsched_policy_param *p);
+        	void (*sched_trackprio)(struct xnthread *thread,
+        				const union xnsched_policy_param *p);
+        	int (*sched_declare)(struct xnthread *thread,
+        			     const union xnsched_policy_param *p);
+        	void (*sched_forget)(struct xnthread *thread);
+        	void (*sched_kick)(struct xnthread *thread);
+        #ifdef CONFIG_XENO_OPT_VFILE
+        	int (*sched_init_vfile)(struct xnsched_class *schedclass,
+        				struct xnvfile_directory *vfroot);
+        	void (*sched_cleanup_vfile)(struct xnsched_class *schedclass);
+        #endif
+        	int nthreads;
+        	struct xnsched_class *next;
+        	int weight;
+        	int policy;
+        	const char *name;
+        };
+
+* sched_init:调度类初始化函数，用于初始化调度类,参见 `xnsched_init()`_
+* sched_enqueue:
+* sched_dequeue:
+* sched_pick:
+* sched_tick:
+* sched_rotate:
+* sched_migrate:
+* sched_setparam:
+* sched_getparam:
+* sched_trackinfo:
+* sched_declare:
+* sched_forget:
+* sched_kick:
+* sched_init_vfile:
+* sched_cleanup_vfile:
+
+
+调度信息
+~~~~~~~~~~~~~~~~
+
+结构体struct xnsched保存了调度类的调度信息,该调度信息是CPU变量，每个逻辑CPU都有一个
+
+    .. code-block:: c
+    
+        struct xnsched {
+        	/*!< Scheduler specific status bitmask. */
+        	unsigned long status;
+        	/*!< Scheduler specific local flags bitmask. */
+        	unsigned long lflags;
+        	/*!< Current thread. */
+        	struct xnthread *curr;
+        #ifdef CONFIG_SMP
+        	/*!< Owner CPU id. */
+        	int cpu;
+        	/*!< Mask of CPUs needing rescheduling. */
+        	cpumask_t resched;
+        #endif
+        	/*!< Context of built-in real-time class. */
+        	struct xnsched_rt rt;
+        #ifdef CONFIG_XENO_OPT_SCHED_WEAK
+        	/*!< Context of weak scheduling class. */
+        	struct xnsched_weak weak;
+        #endif
+        #ifdef CONFIG_XENO_OPT_SCHED_TP
+        	/*!< Context of TP class. */
+        	struct xnsched_tp tp;
+        #endif
+        #ifdef CONFIG_XENO_OPT_SCHED_SPORADIC
+        	/*!< Context of sporadic scheduling class. */
+        	struct xnsched_sporadic pss;
+        #endif
+        #ifdef CONFIG_XENO_OPT_SCHED_QUOTA
+        	/*!< Context of runtime quota scheduling. */
+        	struct xnsched_quota quota;
+        #endif
+        	/*!< Interrupt nesting level. */
+        	volatile unsigned inesting;
+        	/*!< Host timer. */
+        	struct xntimer htimer;
+        	/*!< Round-robin timer. */
+        	struct xntimer rrbtimer;
+        	/*!< Root thread control block. */
+        	struct xnthread rootcb;
+        #ifdef CONFIG_XENO_ARCH_UNLOCKED_SWITCH
+        	struct xnthread *last;
+        #endif
+        #ifdef CONFIG_XENO_ARCH_FPU
+        	/*!< Thread owning the current FPU context. */
+        	struct xnthread *fpuholder;
+        #endif
+        #ifdef CONFIG_XENO_OPT_WATCHDOG
+        	/*!< Watchdog timer object. */
+        	struct xntimer wdtimer;
+        	/*!< Watchdog tick count. */
+        	int wdcount;
+        #endif
+        #ifdef CONFIG_XENO_OPT_STATS
+        	/*!< Last account switch date (ticks). */
+        	xnticks_t last_account_switch;
+        	/*!< Currently active account */
+        	xnstat_exectime_t *current_account;
+        #endif
+        };
+
+
+
+* curr:该调度类
+
+
+
+
+
+
+
+
+
+
+
+xnprocfs_init_tree()
+-----------------------
+
+
+主要对cobalt内核各个组件的procfs虚拟文件系统进行初始化操作，其中包括时钟,堆，中断，调度器，cobalt版本等信息，该函数主要做了以下工作:
+
+
+1. 创建了 ``/proc/xenomai`` 目录,对应的内核对象是 ``cobalt_vfroot`` ;
+2. 创建了 ``/proc/xenomai/sched`` 目录,对应的内核对象是 ``sched_vfroot`` ;
+
+
+
+mach_setup()
+-----------------------
+
+xnintr_mount
+-----------------------
+
+xnpipe_mount
+-----------------------
+
+xnselect_mount
+-----------------------
+
+
+sys_init
+-------------------
+
+xnsched_init()
+---------------------
+
+mach_late_setup
+-----------------------
+
+rtdm_init
+-----------------------
+
+
+cobalt_init
+-----------------------
+
+rtdm_fd_init
+-----------------------
+
+
+
+
+

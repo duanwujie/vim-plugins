@@ -1,0 +1,18 @@
+
+# Standard import for pandas, numpy and matplot
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.ticker as ticker
+
+
+data = pd.read_csv('test.csv', usecols=['date','profit'], parse_dates=['date'])
+data.set_index('date',inplace=True)
+
+fig, ax = plt.subplots()
+ax.bar(data.index,data['profit'])
+ax.xaxis.set_major_locator(mdates.MonthLocator())
+ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+fig.autofmt_xdate()
+plt.show()

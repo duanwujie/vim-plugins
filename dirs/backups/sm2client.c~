@@ -1,0 +1,338 @@
+#include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/pkcs12.h>
+#include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/asn1.h>
+#include <openssl/asn1t.h>
+
+#define RED "\033[0;32;31m"
+#define NONE "\033[m"
+#define YELLOW "\033[1;33m"
+
+typedef unsigned char byte;
+
+
+//the global file pointer
+EVP_PKEY * private_key; /*私钥 */
+EVP_PKEY * public_key;  /*公钥 */
+X509     * public_cert; /*公钥证书*/
+STACK_OF(X509) *ca = NULL;
+
+typedef struct SM2Signature{
+    ASN1_INTEGER * r;
+    ASN1_INTEGER * s;
+}SM2Signature;
+ASN1_SEQUENCE(SM2Signature) = {
+    ASN1_SIMPLE(SM2Signature, r, ASN1_INTEGER),
+    ASN1_SIMPLE(SM2Signature, s, ASN1_INTEGER), 
+}ASN1_SEQUENCE_END(SM2Signature)
+IMPLEMENT_ASN1_FUNCTIONS(SM2Signature)
+
+    
+// --------------------------------------------------------------------------
+/// @brief 将ansi编码的签名解码成64字节的签名
+///
+/// @param sig : 签名缓冲区
+/// @param siglen: 签名缓冲区长度
+/// @param buf: 缓冲区，用于存放64字节的签名
+/// @param buflen: 输入/输出参数
+///
+/// @return 成功返回1，错误返回 0
+// ----------------------------------------------------------------------------
+int asn1_decode_sm2sig(const unsigned char* sig,unsigned int siglen,unsigned char* buf, unsigned int* buflen )
+{
+    SM2Signature* sm2sig = NULL;
+    BIGNUM* bnr = NULL;
+    BIGNUM* bns = NULL;   
+    int len1, len2;
+
+    if(*buflen<64)return 0;
+    
+    sm2sig = SM2Signature_new();
+    if(!sm2sig)goto error;
+    bnr = BN_new();
+    if(!bnr)goto error;
+    bns = BN_new();
+    if(!bns)goto error;
+    
+    if(!d2i_SM2Signature(&sm2sig, &sig, siglen))goto error;
+    
+    if(!ASN1_INTEGER_to_BN(sm2sig->r, bnr))goto error;
+    if(!ASN1_INTEGER_to_BN(sm2sig->s, bns))goto error;
+    
+    len1 = BN_bn2bin(bnr, buf);
+    if(len1!=32)goto error;
+    len2  = BN_bn2bin(bns, buf + len1);
+    if(len2!=32)goto error;
+        
+    if(sm2sig)SM2Signature_free(sm2sig);
+    if(bnr)BN_free(bnr);    
+    if(bns)BN_free(bns);
+
+    *buflen = 64;
+    return 1;
+    
+error:
+    if(sm2sig)SM2Signature_free(sm2sig);
+    if(bnr)BN_free(bnr);    
+    if(bns)BN_free(bns);   
+    return 0;
+}
+
+
+
+// --------------------------------------------------------------------------
+/// @brief 将64字节编码成ansi编码的签名值
+///
+/// @param rawsig:64字节的签名值
+/// @param rawsiglen:签名值长度
+/// @param buf:输出缓冲区，存放编码后的签名值
+/// @param buflen:输出长度
+///
+/// @return 成功返回 1,失败返回 0
+// ----------------------------------------------------------------------------
+int asn1_encode_sm2sig(const unsigned char* rawsig, unsigned int rawsiglen, unsigned char* buf,unsigned int* buflen )
+{
+    SM2Signature* sm2sig = NULL;
+    BIGNUM* bnr = NULL;
+    BIGNUM* bns = NULL;  
+    unsigned char* outbuf = buf;
+    int len;
+    if(*buflen<72)return 0;
+    
+    sm2sig = SM2Signature_new();
+    if(!sm2sig)goto error;
+    bnr = BN_new();
+    if(!bnr)goto error;
+    bns = BN_new();
+    if(!bns)goto error; 
+  
+    if(!BN_bin2bn(rawsig, 32, bnr))goto error;
+    if(!BN_bin2bn(rawsig+32, 32, bns))goto error;   
+    
+    if(!BN_to_ASN1_INTEGER(bnr, sm2sig->r))goto error;
+    if(!BN_to_ASN1_INTEGER(bns, sm2sig->s))goto error;
+        int asn1_encode_sm2sig(const unsigned char* rawsig, unsigned int rawsiglen, unsigned char* buf,unsigned int* buflen ){
+    SM2Signature* sm2sig = NULL;
+    BIGNUM* bnr = NULL;
+    BIGNUM* bns = NULL;  
+    unsigned char* outbuf = buf;
+    int len;
+    if(*buflen<72)return 0;
+    
+    sm2sig = SM2Signature_new();
+    if(!sm2sig)goto error;
+    bnr = BN_new();
+    if(!bnr)goto error;
+    bns = BN_new();
+    if(!bns)goto error; 
+  
+    if(!BN_bin2bn(rawsig, 32, bnr))goto error;
+    if(!BN_bin2bn(rawsig+32, 32, bns))goto error;   
+    
+    if(!BN_to_ASN1_INTEGER(bnr, sm2sig->r))goto error;
+    if(!BN_to_ASN1_INTEGER(bns, sm2sig->s))goto error;
+        
+    len = i2d_SM2Signature(sm2sig, &outbuf);
+    
+    if(sm2sig)SM2Signature_free(sm2sig);
+    if(bnr)BN_free(bnr);    
+    if(bns)BN_free(bns);  
+
+    *buflen = len;
+    return 1;
+    
+error:  
+    if(sm2sig)SM2Signature_free(sm2sig);
+    if(bnr)BN_free(bnr);    
+    if(bns)BN_free(bns);      
+    return 0;    
+}
+    len = i2d_SM2Signature(sm2sig, &outbuf);
+    
+    if(sm2sig)SM2Signature_free(sm2sig);
+    if(bnr)BN_free(bnr);    
+    if(bns)BN_free(bns);  
+
+    *buflen = len;
+    return 1;
+    
+error:  
+    if(sm2sig)SM2Signature_free(sm2sig);
+    if(bnr)BN_free(bnr);    
+    if(bns)BN_free(bns);      
+    return 0;    
+}
+
+
+
+
+// --------------------------------------------------------------------------
+/// @brief 对消息进行签名
+///
+/// @param msg:消息
+/// @param mlen:消息长度
+/// @param sig:返回的签名值(该签名值是ansi编码的,需要 asn1_decode_sm2sig进行解码)
+/// @param slen:返回签名值的长度
+/// @param pkey:私钥
+///
+/// @return 成功返回0，失败返回-1
+// ----------------------------------------------------------------------------
+int sign_it(const byte * msg,size_t mlen, byte * sig,unsigned int * slen,EVP_PKEY * pkey)
+{
+    const EVP_MD* provider = EVP_get_digestbyname("sm3");
+    EVP_MD_CTX * md_ctx = EVP_MD_CTX_create();
+    assert(md_ctx != NULL);define YELLOW "\033[1;33m"  
+    if(md_ctx == NULL) {
+        printf("EVP_MD_CTX_create failed, error 0x%lx\n", ERR_get_error());
+        return -1;
+    }
+    EVP_SignInit (md_ctx, provider);
+    EVP_SignUpdate(md_ctx, msg, mlen);
+    EVP_SignFinal(md_ctx, sig, slen, pkey);
+    if(md_ctx){
+        EVP_MD_CTX_destroy(md_ctx);
+        md_ctx = NULL;
+    }
+    return 0;
+}
+
+
+// --------------------------------------------------------------------------
+/// @brief 验证签名
+///
+/// @param msg:消息
+/// @param mlen:消息长度
+/// @param sig:签名
+/// @param slen:签名长度
+/// @param pkey:公钥
+///
+/// @return 成功返回1，失败返回<=0
+// ----------------------------------------------------------------------------
+int verify_it(const byte *msg,size_t mlen,const byte* sig,size_t slen,EVP_PKEY * pkey)
+{
+    int ret = -1;
+    EVP_MD_CTX* ctx = NULL;
+    do
+    {
+        ctx = EVP_MD_CTX_create();
+        assert(ctx != NULL);
+        if(ctx == NULL) break;
+        const EVP_MD* provider = EVP_get_digestbyname("sm3");
+
+        EVP_VerifyInit(ctx, provider);
+        EVP_VerifyUpdate (ctx, msg, mlen);
+        ret = EVP_VerifyFinal(ctx, sig,slen, pkey);
+    }while(0);
+    return ret;
+}
+
+
+
+/* 加载p12 文件 */
+// --------------------------------------------------------------------------
+/// @brief 加载p12文件
+///
+/// @param p12文件名
+/// @param 密码
+///
+/// @return 成功返回0，失败返回-1
+// ----------------------------------------------------------------------------
+int load_p12(char * p12_filename,char * password)
+{
+    //variable declare
+    FILE * fp;
+    PKCS12 *p12;
+
+    if((fp=fopen(p12_filename,"rb")) == NULL)
+    {
+        fprintf(stderr,"Unable to open the file:%s\n",p12_filename);
+        return -1;
+    }
+    //load the p12 file into PCKS12 struct
+    p12 = d2i_PKCS12_fp(fp, NULL);
+    fclose(fp);
+    if(!p12){
+        fprintf(stderr,"Error reading PCKS#12 file\n");
+        return -1;
+    }
+
+    if (!PKCS12_parse(p12,password, &private_key, &public_cert, &ca)) {
+        fprintf(stderr, "Error parsing PKCS#12 file\n");
+        return -1;
+    }
+
+    public_key = X509_get_pubkey(public_cert);
+    if(!public_key){
+        fprintf(stderr, "Error parsing public key\n");
+        return -1;
+    }
+
+    PKCS12_free(p12);
+    return 0;
+}
+
+
+int main(int argc,char *argv[])
+{
+    
+    //init
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
+
+    /* 加载p12文件 */
+    if(load_p12("certs/device.p12","test")<0){
+        fprintf(stderr, "load the PKCS#12 file failed\n");
+        return -1;
+    }
+        
+    char msg[64]="abcd";
+    size_t mlen=4;
+    
+    unsigned int slen=0;
+    unsigned int sig_buffer_len=128;
+    byte * sig=malloc(128);
+    byte * sig_buffer=malloc(128);
+
+    
+    //使用私钥进行签名"  
+    sign_it(msg,mlen,sig,&slen,private_key); 
+    asn1_decode_sm2sig(sig,slen,sig_buffer,&sig_buffer_len); //convert ansi sign to 64 byte sign
+
+    //output the 64 byte sign
+    printf("The signed value:\n");
+
+    printf(YELLOW);
+    for(int i=0;i<sig_buffer_len;i++){
+        printf("%02X ",sig_buffer[i]);
+        if((i+1)%16==0)
+            printf("\n");
+    }
+    printf(NONE);
+
+
+    //使用公钥验证签名,这里没有改变消息，所以验证成功
+    if(verify_it(msg,mlen,sig,slen,public_key)<=0)
+        printf("Not  modified msg the verify result: " RED "verify failed\n" NONE);
+    else
+        printf("Not  modified msg the verify result: " RED "verify okay\n" NONE);
+
+    //对消息进行修改，再次进行验证签名，此时应该验证签名失败
+    msg[1]='a';
+    if(verify_it(msg,mlen,sig,slen,public_key)<=0)
+        printf("When modified msg the verify result: " RED "verify failed\n" NONE);
+    else
+        printf("When modified msg the verify result: " RED "verify okay\n" NONE);
+
+    //cleanup
+    EVP_cleanup();
+    CRYPTO_cleanup_all_ex_data();
+    ERR_free_strings();
+    return 0;
+}

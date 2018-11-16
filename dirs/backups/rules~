@@ -1,0 +1,12 @@
+#!/usr/bin/make -f
+ifneq ($(shell which tclsh8.6),)
+TCL_VER := 8.6
+else
+TCL_VER := 8.5
+endif
+MAJOR_VER := 9.6
+
+
+clean::
+
+    echo "Run the clean"

@@ -1,0 +1,11 @@
+!===============================
+! – Setting for xterm
+! ——————–
+!显示中文
+xterm*faceName:AR PL Uming CN
+xterm*faceSize:12
+Ctrl <KeyPress> V: insert-selection(,PRIMARY,CUT_BUFFER0) \n\
+Ctrl <KeyPress> P: print() \n
+!———————-
+!- End of setting Xterm
+!=========================

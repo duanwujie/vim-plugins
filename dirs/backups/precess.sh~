@@ -1,0 +1,10 @@
+for i in `ls -1 *.so`
+do
+    ldir=${i%.*}
+    mkdir $ldir
+    cp $i $ldir
+    cd $ldir
+    unzip $i
+    rm $i
+    cd -
+done

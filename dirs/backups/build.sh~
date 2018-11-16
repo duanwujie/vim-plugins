@@ -1,0 +1,6 @@
+#!/bin/bash
+rm ./policy/_build/html -fr
+cd policy
+./genindex.sh
+cd -
+make
